@@ -1,11 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net48</TargetFrameworks>
+    <LangVersion>7.3</LangVersion>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/SolutionInputParser.cs" Link="SolutionInputParser.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/SolutionManager.cs" Link="SolutionManager.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/BatchPlan.cs" Link="BatchPlan.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/CopySettings.cs" Link="CopySettings.cs" />
+    <Compile Include="EngineTests.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/CsvFormatting.cs" Link="CsvFormatting.cs" />
+    <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.59" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.2" Condition="'$(TargetFramework)' == 'net8.0'" />
   </ItemGroup>
 </Project>

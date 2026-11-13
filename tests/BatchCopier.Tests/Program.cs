@@ -14,6 +14,10 @@ internal static class Program
     private static void Main()
     {
         ParserTests();
+        EngineTests.Run(Check);
+        Check(CsvFormatting.Field("a,b") == "\"a,b\"", "CSV comma quoting");
+        Check(CsvFormatting.Field("CRM \"fault\"\r\nnext") == "\"CRM \"\"fault\"\"\r\nnext\"", "CSV quotes and newlines");
+        Check(CsvFormatting.Field(null) == "\"\"", "CSV empty error detail");
         Console.WriteLine("Passed " + assertions + " assertions.");
     }
 
@@ -32,6 +36,7 @@ internal static class Program
         Check(SolutionInputParser.ParseLine("{" + id + "}").Id == id, "braced GUID");
         Check(SolutionInputParser.ParseLine("My_Source123").UniqueName == "My_Source123", "unique name");
         Check(SolutionInputParser.ParseLine("\"My_Source123\"").UniqueName == "My_Source123", "single-column CSV");
+        Check(SolutionInputParser.Parse("\"\"").Single().Error != null, "empty CSV cell is an error");
         var invalid = new[] {
             "http://crm.example/Org/tools/solution/edit.aspx?id=" + id,
             "https://crm.example/Org/wrong.aspx?id=" + id,
@@ -43,7 +48,7 @@ internal static class Program
         };
         foreach (var value in invalid) Check(SolutionInputParser.ParseLine(value).Error != null, "reject " + value);
         var batch = SolutionInputParser.Parse(string.Join("\r\n", Enumerable.Repeat(url, 12)) + "\n\ninvalid input");
-        Check(batch.Count == 13 && batch.Last().LineNumber == 15 && batch.Last().Error != null, "12 URLs and line errors");
+        Check(batch.Count == 13 && batch.Last().LineNumber == 14 && batch.Last().Error != null, "12 URLs and line errors");
         Check(SolutionInputParser.Parse("\r\n  \n").Count == 0, "blank lines");
     }
 }

@@ -1,0 +1,30 @@
+name: Batch copier Windows validation
+on:
+  push:
+    branches: [feature/batch-solution-import]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore and build the production plugin (including WinForms resources)
+        run: msbuild MsCrmTools.SolutionComponentsMover.sln /restore /p:Configuration=Release '/p:Platform=Any CPU'
+      - name: Build native .NET Framework tests
+        run: dotnet build tests/BatchCopier.Tests/BatchCopier.Tests.csproj -f net48 --configuration Release
+      - name: Run parser and fake CRM tests on .NET Framework
+        shell: pwsh
+        run: |
+          & ./tests/BatchCopier.Tests/bin/Release/net48/BatchCopier.Tests.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: batch-copier-release
+          path: MsCrmTools.SolutionComponentsMover/bin/Release/Plugins/*
+          if-no-files-found: error
