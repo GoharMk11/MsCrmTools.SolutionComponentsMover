@@ -24,8 +24,8 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
         public static List<SolutionInput> Parse(string text)
         {
             return (text ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Split('\n')
-                .Select((line, index) => ParseLine(line, index + 1))
-                .Where(input => input.Text.Length > 0).ToList();
+                .Select((line, index) => string.IsNullOrWhiteSpace(line) ? null : ParseLine(line, index + 1))
+                .Where(input => input != null).ToList();
         }
 
         public static SolutionInput ParseLine(string text, int lineNumber = 1)

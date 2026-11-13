@@ -1,9 +1,8 @@
-﻿using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk;
 using MsCrmTools.SolutionComponentsMover.AppCode;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace MsCrmTools.SolutionComponentsMover.UserControls
@@ -12,7 +11,8 @@ namespace MsCrmTools.SolutionComponentsMover.UserControls
     {
         private readonly List<ListViewItem> _items = new List<ListViewItem>();
         private ListViewColumnSorter lvColumnSorter;
-        private Thread searchThread;
+        private readonly HashSet<Guid> selectedIds = new HashSet<Guid>();
+        private bool refreshing;
         private IOrganizationService service;
 
         public SolutionPicker()
@@ -20,15 +20,46 @@ namespace MsCrmTools.SolutionComponentsMover.UserControls
             InitializeComponent();
             lvColumnSorter = new ListViewColumnSorter();
             this.lvSolutions.ListViewItemSorter = lvColumnSorter;
+            lvSolutions.ItemSelectionChanged += (sender, e) =>
+            {
+                if (refreshing) return;
+                var id = ((Entity)e.Item.Tag).Id;
+                if (!lvSolutions.MultiSelect && e.IsSelected) selectedIds.Clear();
+                if (e.IsSelected) selectedIds.Add(id); else selectedIds.Remove(id);
+                SelectionChanged?.Invoke(this, EventArgs.Empty);
+            };
         }
 
         public event EventHandler<SolutionSelectedEventArgs> OnSolutionSelected;
+
+        public event EventHandler SelectionChanged;
+
+        public bool MultiSelect
+        {
+            get { return lvSolutions.MultiSelect; }
+            set { lvSolutions.MultiSelect = value; }
+        }
+
+        public void SelectSolutionsByIds(IEnumerable<Guid> ids)
+        {
+            selectedIds.UnionWith(ids);
+            txtFilter.Clear();
+            DisplaySolutions();
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void ClearSelection()
+        {
+            selectedIds.Clear();
+            DisplaySolutions();
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         public bool CanDisplayManagedSolutions { get; set; }
 
         public List<Entity> SelectedSolutions
         {
-            get { return lvSolutions.SelectedItems.Cast<ListViewItem>().Select(i => (Entity)i.Tag).ToList(); }
+            get { return _items.Select(i => (Entity)i.Tag).Where(e => selectedIds.Contains(e.Id)).ToList(); }
         }
 
         public IOrganizationService Service
@@ -36,7 +67,10 @@ namespace MsCrmTools.SolutionComponentsMover.UserControls
 
         public void LoadSolutions(IEnumerable<Entity> solutions)
         {
+            selectedIds.Clear();
+            refreshing = true;
             lvSolutions.Items.Clear();
+            refreshing = false;
             _items.Clear();
 
             IEnumerable<Entity> solutionsToDisplay = solutions;
@@ -64,16 +98,23 @@ namespace MsCrmTools.SolutionComponentsMover.UserControls
 
         private void DisplaySolutions()
         {
-            Invoke(new Action(() =>
+            refreshing = true;
+            lvSolutions.BeginUpdate();
+            try
             {
                 lvSolutions.Items.Clear();
-
-                lvSolutions.Items.AddRange(_items
-                    .Where(i => i.Text.ToLower().Contains(txtFilter.Text.ToLower())
-                     || i.SubItems.Cast<ListViewItem.ListViewSubItem>().Any(s => s.Text.ToLower().Contains(txtFilter.Text.ToLower()))
-                    )
-                    .ToArray());
-            }));
+                lvSolutions.Items.AddRange(_items.Where(i =>
+                    selectedIds.Contains(((Entity)i.Tag).Id) ||
+                    i.SubItems.Cast<ListViewItem.ListViewSubItem>().Any(s =>
+                        s.Text.IndexOf(txtFilter.Text, StringComparison.OrdinalIgnoreCase) >= 0)).ToArray());
+                foreach (ListViewItem item in lvSolutions.Items)
+                    item.Selected = selectedIds.Contains(((Entity)item.Tag).Id);
+            }
+            finally
+            {
+                lvSolutions.EndUpdate();
+                refreshing = false;
+            }
         }
 
         private void LvSolutions_ColumnClick(object sender, ColumnClickEventArgs e)
@@ -110,9 +151,7 @@ namespace MsCrmTools.SolutionComponentsMover.UserControls
 
         private void txtFilter_TextChanged(object sender, EventArgs e)
         {
-            searchThread?.Abort();
-            searchThread = new Thread(DisplaySolutions);
-            searchThread.Start();
+            DisplaySolutions();
         }
     }
 }
