@@ -1,4 +1,4 @@
-﻿using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
@@ -25,6 +25,8 @@ namespace MsCrmTools.SolutionComponentsMover
         public MainControl()
         {
             InitializeComponent();
+            InitializeBatchControls();
+            WireBatchControls();
         }
 
         public string HelpUrl => "https://github.com/MscrmTools/MsCrmTools.SolutionComponentsMover/wiki";
@@ -35,53 +37,55 @@ namespace MsCrmTools.SolutionComponentsMover
 
         public void LoadSolutions()
         {
+            if (batchBusy) return;
+            InvalidatePreview();
+            importedResults = null;
+            txtValidation.Clear();
+            loadedConnectionUrl = null;
+            sourceSolutionPicker.LoadSolutions(new List<Entity>());
+            targetSolutionPicker.LoadSolutions(new List<Entity>());
             sManager = new SolutionManager(Service);
-
+            var manager = sManager;
+            var service = Service;
+            var generation = connectionGeneration;
+            var connectionUrl = ConnectionDetail.WebApplicationUrl;
+            SetBatchBusy(true);
             WorkAsync(new WorkAsyncInfo
             {
                 Message = "Loading solutions...",
                 Work = (bw, e) =>
                 {
-                    e.Result = sManager.RetrieveSolutions();
-
-                    _omc = ((OptionSetMetadata)((RetrieveOptionSetResponse)Service.Execute(
-                        new RetrieveOptionSetRequest
-                        {
-                            Name = "componenttype"
-                        })).OptionSetMetadata).Options;
-
-                    _emc = MetadataHelper.LoadEntities(Service);
-
-                    if (ConnectionDetail.OrganizationMajorVersion >= 9 && ConnectionDetail.OrganizationMinorVersion >= 1)
+                    e.Result = manager.RetrieveSolutions();
+                    _omc = ((OptionSetMetadata)((RetrieveOptionSetResponse)service.Execute(
+                        new RetrieveOptionSetRequest { Name = "componenttype" })).OptionSetMetadata).Options;
+                    _emc = MetadataHelper.LoadEntities(service);
+                    _solutionComponents = null;
+                    // On-premise uses componenttype metadata; do not assume online-only definition support.
+                    if (ConnectionDetail.UseOnline && ConnectionDetail.OrganizationMajorVersion >= 9 &&
+                        ConnectionDetail.OrganizationMinorVersion >= 1)
                     {
-                        _solutionComponents = Service.RetrieveMultiple(new QueryExpression("solutioncomponentdefinition")
+                        _solutionComponents = service.RetrieveMultiple(new QueryExpression("solutioncomponentdefinition")
                         {
-                            NoLock = true,
                             ColumnSet = new ColumnSet("objecttypecode", "primaryentityname"),
                             Criteria = new FilterExpression
                             {
-                                Conditions =
-                            {
-                                new ConditionExpression("canbeaddedtosolutioncomponents", ConditionOperator.Equal, true)
-                            }
+                                Conditions = { new ConditionExpression("canbeaddedtosolutioncomponents", ConditionOperator.Equal, true) }
                             }
                         }).Entities.ToList();
                     }
                 },
                 PostWorkCallBack = e =>
                 {
-                    if (e.Error == null)
-                    {
-                        sourceSolutionPicker.LoadSolutions((IEnumerable<Entity>)e.Result);
-                        targetSolutionPicker.LoadSolutions((IEnumerable<Entity>)e.Result);
-                    }
-                    else
-                    {
-                        MessageBox.Show(ParentForm, "An error occured: " + e.Error.Message, "Error",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error);
-                    }
-                },
+                    if (IsDisposed || Disposing) return;
+                    SetBatchBusy(false);
+                    if (generation != connectionGeneration) return;
+                    if (e.Error != null) { ShowBatchError(e.Error); return; }
+                    managerSolutions = ((IEnumerable<Entity>)e.Result).ToList();
+                    sourceSolutionPicker.LoadSolutions(managerSolutions);
+                    targetSolutionPicker.LoadSolutions(managerSolutions);
+                    loadedConnectionUrl = connectionUrl;
+                    lblConnection.Text = "Connected CRM: " + connectionUrl + " — DEV testing only";
+                }
             });
         }
 
@@ -120,67 +124,7 @@ namespace MsCrmTools.SolutionComponentsMover
 
         private void tsbCopyComponents_Click(object sender, EventArgs e)
         {
-            var settings = new CopySettings
-            {
-                SourceSolutions = sourceSolutionPicker.SelectedSolutions,
-                TargetSolutions = targetSolutionPicker.SelectedSolutions,
-                ConnectionDetail = ConnectionDetail,
-                CheckBestPractice = chkCheckBestPractice.Checked
-            };
-
-            ComponentTypeSelector csForm;
-            if (ConnectionDetail.OrganizationMajorVersion >= 9 && ConnectionDetail.OrganizationMinorVersion >= 1)
-            {
-                csForm = new ComponentTypeSelector(_omc, _emc, _solutionComponents);
-            }
-            else
-            {
-                csForm = new ComponentTypeSelector(_omc);
-            }
-
-            if (csForm.ShowDialog(ParentForm) == DialogResult.OK)
-            {
-                settings.ComponentsTypes = csForm.SelectedComponents;
-                settings.AllComponents = csForm.AllItemsSelected;
-            }
-            else
-            {
-                return;
-            }
-
-            WorkAsync(new WorkAsyncInfo
-            {
-                Message = "Starting copy...",
-                AsyncArgument = settings,
-                Work = (bw, evt) =>
-                {
-                    sManager.CopyComponents((CopySettings)evt.Argument, _omc, _emc, _solutionComponents, ConnectionDetail.UseOnline, bw);
-                },
-                PostWorkCallBack = evt =>
-                {
-                    if (evt.Error != null)
-                    {
-                        MessageBox.Show(ParentForm, "An error occured: " + evt.Error.Message, "Error",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error);
-                    }
-                },
-                ProgressChanged = evt =>
-                {
-                    if (evt.ProgressPercentage == 0)
-                    {
-                        SetWorkingMessage(evt.UserState.ToString());
-                    }
-                    else if (evt.ProgressPercentage == -1)
-                    {
-                        lvLogs.Items.Add(new ListViewItem(evt.UserState.ToString()) { ForeColor = Color.Red });
-                    }
-                    else if (evt.ProgressPercentage == 1)
-                    {
-                        lvLogs.Items.Add(new ListViewItem(evt.UserState.ToString()) { ForeColor = Color.Green });
-                    }
-                }
-            });
+            ExecuteBatch();
         }
 
         private void tsbLoadSolutions_Click(object sender, EventArgs e)
