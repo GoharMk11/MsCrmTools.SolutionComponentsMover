@@ -106,6 +106,10 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
                 throw new InvalidOperationException("A source solution is no longer available for selection.");
             var components = RetrieveComponentsFromSolutions(sources.Select(s => s.Id).ToList(), settings.ComponentsTypes, settings.AllComponents);
 
+            if (components.Any(c => c.GetAttributeValue<OptionSetValue>("componenttype").Value == 1 &&
+                !ComponentCoverage.Behavior(c).HasValue))
+                throw new InvalidOperationException("An entity has no inclusion behavior. Review the source solution; copying with an assumed all-assets rule is unsafe.");
+
             if (settings.CheckBestPractice)
             {
                 var entityIds = components.Where(c => c.GetAttributeValue<OptionSetValue>("componenttype").Value == 1 &&

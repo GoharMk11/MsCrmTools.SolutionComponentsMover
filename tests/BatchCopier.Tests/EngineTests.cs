@@ -102,6 +102,11 @@ internal static partial class EngineTests
         settings.ComponentsTypes.Add(61);
         check(manager.Preview(settings).Components.All(c => c.Type == 61), "component type filter retained");
         settings.AllComponents = true;
+        var entityComponent = crm.Components.First(c => c.GetAttributeValue<Guid>("objectid") == shared);
+        var savedBehavior = entityComponent["rootcomponentbehavior"];
+        entityComponent.Attributes.Remove("rootcomponentbehavior");
+        ExpectFailure(() => manager.Preview(settings), check, "missing entity coverage must not assume all assets");
+        entityComponent["rootcomponentbehavior"] = savedBehavior;
         settings.CheckBestPractice = true;
         crm.ManagedEntities.Add(new EntityMetadata { MetadataId = shared, SchemaName = "ActualProblemEntity", DisplayName = new Label("Actual problem", 1033) });
         try { manager.Preview(settings); throw new Exception("expected managed validation"); }
