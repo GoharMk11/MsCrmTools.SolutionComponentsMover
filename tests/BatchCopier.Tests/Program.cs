@@ -11,10 +11,14 @@ internal static class Program
         if (!condition) throw new Exception(message);
     }
 
+    [STAThread]
     private static void Main()
     {
         ParserTests();
         EngineTests.Run(Check);
+#if NET48
+        PickerTests.Run(Check);
+#endif
         Check(CsvFormatting.Field("a,b") == "\"a,b\"", "CSV comma quoting");
         Check(CsvFormatting.Field("CRM \"fault\"\r\nnext") == "\"CRM \"\"fault\"\"\r\nnext\"", "CSV quotes and newlines");
         Check(CsvFormatting.Field(null) == "\"\"", "CSV empty error detail");

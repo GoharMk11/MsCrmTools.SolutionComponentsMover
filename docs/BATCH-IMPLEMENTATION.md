@@ -22,7 +22,7 @@
 - Files: `UserControls/SolutionPicker.cs`, `MainControl.cs`, `MainControl.Batch.cs`, `MainControl.Designer.cs`, project compile entries.
 - Adds paste/import, Validate & Select, Clear input, connected-organization display and per-row validation output. Existing manual sources are preserved. Selected entries stay visible through filtering; import clears the filter. Target selection is single-select.
 - Filtering now runs on the UI thread, avoiding the former `Thread.Abort` race. Validation resolves IDs before selection and does not execute add requests. Unresolved input errors block preview/execution until fixed or cleared.
-- Limits: visual layout and manual selection behavior still need Windows/XrmToolBox interaction testing.
+- Added native Windows picker regression tests for manual selection, imported selection, filter visibility, manual deselection, single target and reload. They exercise the actual WinForms control. Full XrmToolBox layout still requires interaction testing.
 
 ## Phases 4–5 — preview and copy planning
 

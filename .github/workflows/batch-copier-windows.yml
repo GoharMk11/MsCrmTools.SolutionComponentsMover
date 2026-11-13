@@ -18,7 +18,7 @@ jobs:
         run: msbuild MsCrmTools.SolutionComponentsMover.sln /restore /p:Configuration=Release '/p:Platform=Any CPU'
       - name: Build native .NET Framework tests
         run: dotnet build tests/BatchCopier.Tests/BatchCopier.Tests.csproj -f net48 --configuration Release
-      - name: Run parser and fake CRM tests on .NET Framework
+      - name: Run parser, fake CRM and WinForms picker tests on .NET Framework
         shell: pwsh
         run: |
           & ./tests/BatchCopier.Tests/bin/Release/net48/BatchCopier.Tests.exe

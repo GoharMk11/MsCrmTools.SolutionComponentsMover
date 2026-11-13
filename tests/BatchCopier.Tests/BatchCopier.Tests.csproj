@@ -16,4 +16,13 @@
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.59" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.2" Condition="'$(TargetFramework)' == 'net8.0'" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Compile Include="PickerTests.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/UserControls/SolutionPicker.cs" Link="SolutionPicker.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/UserControls/SolutionPicker.Designer.cs" Link="SolutionPicker.Designer.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/ListViewColumnSorter.cs" Link="ListViewColumnSorter.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/SolutionSelectedEventArgs.cs" Link="SolutionSelectedEventArgs.cs" />
+  </ItemGroup>
 </Project>
