@@ -14,7 +14,7 @@
 - Files: `AppCode/SolutionInputParser.cs`, `tests/BatchCopier.Tests/Program.cs`.
 - HTTPS URLs, plain/braced GUIDs, Unique Names and headerless single-column CSV/TXT are supported. Whitespace lines are ignored; invalid nonblank rows remain errors. URL user info, fragments, duplicate/missing/invalid IDs, wrong paths and non-HTTPS URLs are rejected.
 - Host, effective port and normalized organization path must match the active connection. Inputs are resolved against that organization's `IOrganizationService`; mixed GUID/name references to the same solution are reported as duplicates.
-- Parser tests pass as part of the 63-assertion suite, including 12 pasted URLs and per-line validation.
+- Parser tests pass as part of the 64-assertion portable suite, including 12 pasted URLs and per-line validation.
 - Limits: multi-column CSV and multiline CSV cells are deliberately unsupported and reported as invalid input; no network URL fetching occurs.
 
 ## Phase 3 — bulk selection UI
@@ -28,7 +28,7 @@
 
 - Files: `AppCode/SolutionManager.cs`, `AppCode/BatchPlan.cs`, `AppCode/CopySettings.cs`, `Forms/ComponentTypeSelector.cs`.
 - Preview resolves selected solutions again, rejects managed targets, multiple targets and target-as-source, reads source/target components using explicit first-page initialization and paging cookies, checks problematic managed entities, and builds one operation per component type/ID.
-- Inclusion policy: `0` (all assets) covers `1` (exclude subcomponents) and `2` (shell); `1` covers `2`. Merging sources uses the broadest requested behavior. Missing versus explicit inclusion behavior is ambiguous and blocks preview rather than silently dropping a requirement. Unrecognized behaviors are rejected. Existing target components are skipped only when their coverage satisfies the request.
+- Inclusion policy: `0` (all assets) covers `1` (exclude subcomponents) and `2` (shell); `1` covers `2`. Merging sources uses the broadest requested behavior. An entity with missing inclusion behavior blocks preview rather than assuming all assets. For other types, missing versus explicit inclusion behavior is ambiguous and blocks preview rather than silently dropping a requirement. Unrecognized behaviors are rejected. Existing target components are skipped only when their coverage satisfies the request.
 - Environment Variable Definition (380) retains the existing special rule: exclude implicit values/settings, and plan its coverage as exclusion rather than all assets. Value components (381) are copied only when explicitly present and selected. No uniform inclusion rule is imposed on other component types.
 - The original on-premise metadata route is retained; online definition metadata is only requested on the supported online route. Missing entity labels no longer crash the type selector.
 - Preview displays source names, target name/unique name, raw/unique/satisfied/planned counts, warnings and every planned component with behavior and origins. Preview issues no writes.
@@ -46,11 +46,11 @@
 ## Phase 7 — validation and deployment status
 
 - Added `tests/BatchCopier.Tests` (console assertions, exit code fails on assertion failure) targeting both net8.0 and net48. Production remains .NET Framework 4.8 with unchanged package versions. Tests link the actual engine/parser sources and use actual CRM SDK types; no CRM server is contacted.
-- Linux net8 run: **63 assertions passed**. NU1701 is expected because the CRM SDK package targets .NET Framework; this is not proof of native runtime compatibility.
+- Linux net8 run: **64 assertions passed**. NU1701 is expected because the CRM SDK package targets .NET Framework; this is not proof of native runtime compatibility.
 - Full C# source compile against net48 and the production dependencies in an external temporary compile project: **0 warnings / 0 errors**. This check excludes embedded resources and Windows post-build commands and is not a deployable plugin build.
-- Native net48 test executable compilation passed on Linux; execution requires Windows/.NET Framework.
+- Native net48 test executable compilation passed on Linux. Windows CI subsequently passed the production Release build and native tests, including the actual WinForms picker.
 - The original project's Linux full build stops at MSB3823/MSB3822 for non-string WinForms resources. Production resources/framework/dependencies were not changed to work around Linux limitations.
-- `.github/workflows/batch-copier-windows.yml` builds the real Release solution, runs net48 tests on Windows and uploads `bin/Release/Plugins` as an artifact. Its observed result must be recorded separately after push.
+- `.github/workflows/batch-copier-windows.yml` builds the real Release solution, runs net48 tests on Windows and uploads `bin/Release/Plugins` as an artifact. Observed successful Windows runs: [initial native build/tests](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/actions/runs/43490652906) and [71 assertions including the picker](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/actions/runs/43490924235). The final unknown-entity-coverage regression adds one assertion; its final run is recorded below.
 - **Not verified:** real XrmToolBox load, UI layout, CRM 9.1 On-Premise DEV integration, dependency behavior, forms/views/fields, workflows/plugin components and server-side repeat/cancellation behavior. No DEV connection or Windows desktop was provided. No CRM environment, including PROD, was accessed.
 - Acceptance is **pending** these integration checks; compilation and fake tests alone do not complete acceptance.
 - The fork's actual default branch is `master`, and `main` does not exist. PR base awaits the user's choice; no default branch is created or changed implicitly.
@@ -69,3 +69,7 @@ Use a disposable DEV organization and 2–3 small unmanaged sources plus a separ
 - [ ] Repeat successful batches and confirm no unnecessary add requests; failed components remain retryable.
 - [ ] Switch connections after preview and verify reload/repreview is required.
 - [ ] Verify source memberships remain unchanged and exactly one unmanaged target is used.
+
+### Final observed Windows result
+
+Code commit `33aa280` passed [Windows CI run 43491205219](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/actions/runs/43491205219): production Release build **0 warnings / 0 errors**, native test executable **72 assertions passed** (64 parser/engine/CSV assertions plus 8 actual WinForms picker assertions). Test restore also reports the documented net8 framework-fallback warning. The [Release DLL/PDB artifact](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/actions/runs/43491205219/artifacts/14069423950) was uploaded successfully. The final documentation-only commit skips CI; no production code changed after the tested commit. Actual XrmToolBox hosting and CRM DEV acceptance remain unverified.
