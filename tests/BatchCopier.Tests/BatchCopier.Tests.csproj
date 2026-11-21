@@ -7,6 +7,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="OperationalTests.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/BuildInfo.cs" Link="BuildInfo.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/RunReports.cs" Link="RunReports.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/ContentSnapshots.cs" Link="ContentSnapshots.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/CopyRetry.cs" Link="CopyRetry.cs" />
     <Compile Include="PreviewTests.cs" />
     <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/PreviewNames.cs" Link="PreviewNames.cs" />
     <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/SolutionInputParser.cs" Link="SolutionInputParser.cs" />
@@ -20,6 +25,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/Forms/RunComparisonForm.cs" Link="RunComparisonForm.cs" />
     <Reference Include="System.Drawing" />
     <Compile Include="PickerTests.cs" />
     <Compile Include="SourceSelectionTests.cs" />

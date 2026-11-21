@@ -15,7 +15,7 @@ jobs:
         with:
           dotnet-version: 8.0.x
       - name: Restore and build the production plugin (including WinForms resources)
-        run: msbuild MsCrmTools.SolutionComponentsMover.sln /restore /p:Configuration=Release '/p:Platform=Any CPU'
+        run: msbuild MsCrmTools.SolutionComponentsMover.sln /restore /p:Configuration=Release '/p:Platform=Any CPU' /p:BuildRevision=${{ github.sha }}
       - name: Build native .NET Framework tests
         run: dotnet build tests/BatchCopier.Tests/BatchCopier.Tests.csproj -f net48 --configuration Release
       - name: Run parser, fake CRM and WinForms picker tests on .NET Framework

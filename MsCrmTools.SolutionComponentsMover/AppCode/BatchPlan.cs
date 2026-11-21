@@ -24,12 +24,18 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
         public string DisplayName { get; set; }
         public string TypeName { get; set; }
         public string NameWarning { get; set; }
+        public string Fingerprint { get; set; }
+        public string Tracking { get; set; }
         public string ActionLabel => AlreadyExists ? "Skip — already included" : TargetPresent ? "Expand existing coverage" : "Add to target";
         public string Key => Type + ":" + Id;
     }
 
     internal sealed class BatchPlan
     {
+        public Guid OrganizationId { get; set; }
+        public Guid UserId { get; set; }
+        public string EnvironmentUrl { get; set; }
+        public RunReport PreviousRun { get; set; }
         public CopySettings Settings { get; set; }
         public Entity Target { get; set; }
         public int RetrievedCount { get; set; }
@@ -45,6 +51,8 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
     {
         public string DisplayName { get; set; }
         public string TypeName { get; set; }
+        public int Attempts { get; set; }
+        public string RetryNotes { get; set; }
         public string Source { get; set; }
         public int Type { get; set; }
         public Guid Id { get; set; }

@@ -76,7 +76,14 @@
   <ItemGroup>
     <Compile Include="AppCode\SolutionInputParser.cs" />
     <Compile Include="AppCode\BatchPlan.cs" />
+    <Compile Include="AppCode\BuildInfo.cs" />
+    <Compile Include="AppCode\RunReports.cs" />
+    <Compile Include="AppCode\ContentSnapshots.cs" />
+    <Compile Include="AppCode\CopyRetry.cs" />
     <Compile Include="AppCode\PreviewNames.cs" />
+    <Compile Include="Forms\RunComparisonForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\SourceSelectionForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -175,6 +182,13 @@
       move /Y $(ProjectName).pdb Plugins
     </PostBuildEvent>
   </PropertyGroup>
+  <PropertyGroup>
+    <BuildRevision Condition="'$(BuildRevision)' == ''">local</BuildRevision>
+  </PropertyGroup>
+  <Target Name="WriteBuildIdentity" BeforeTargets="CoreCompile">
+    <WriteLinesToFile File="$(IntermediateOutputPath)BuildIdentity.g.cs" Lines="[assembly: System.Reflection.AssemblyInformationalVersionAttribute(&quot;$(BuildRevision)&quot;)]" Overwrite="true" />
+    <ItemGroup><Compile Include="$(IntermediateOutputPath)BuildIdentity.g.cs" /></ItemGroup>
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
