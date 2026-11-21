@@ -53,6 +53,10 @@ internal static class HostUiTests
                 dropdown.SelectedIndex = 0;
                 var selected = (System.Collections.IList)targetPicker.GetType().GetProperty("SelectedSolutions").GetValue(targetPicker);
                 check(selected.Count == 1, "production target dropdown updates the existing single-target picker");
+                dropdown.Text = "not an existing target";
+                selected = (System.Collections.IList)targetPicker.GetType().GetProperty("SelectedSolutions").GetValue(targetPicker);
+                check(selected.Count == 0, "editing target text invalidates the production target selection");
+                dropdown.SelectedIndex = -1; dropdown.SelectedIndex = 0;
                 var connection = (Label)type.GetField("lblConnection", Flags).GetValue(control); connection.Text = "Connected: DEV (sample data, no CRM connection)";
                 using (var bitmap = new Bitmap(form.Width, form.Height))
                 {

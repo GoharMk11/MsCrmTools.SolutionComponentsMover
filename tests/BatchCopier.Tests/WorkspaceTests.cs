@@ -42,6 +42,7 @@ internal static class WorkspaceTests
             workspace.SetPreview(null);
             check(preview.IsDisposed && workspace.PreviewEmpty.Visible, "invalidating a plan disposes the stale preview");
             workspace.Tabs.SelectedTab = workspace.SetupPage;
+            workspace.Target.SelectedIndex = -1;
             workspace.Target.SelectedIndex = 0;
             using (var bitmap = new Bitmap(form.Width, form.Height))
             {
@@ -51,7 +52,7 @@ internal static class WorkspaceTests
             workspace.Tabs.SelectedTab = workspace.ResultsPage;
             workspace.SetSources(new[] { source, target });
             workspace.Tabs.SelectedTab = workspace.SetupPage;
-            check(workspace.Sources.Items.Count == 2 && workspace.SelectedTarget.Id == target.Id, "tab navigation retains selections");
+            check(workspace.Sources.Items.Count == 2 && workspace.SelectedTarget?.Id == target.Id, "tab navigation retains selections");
             form.Close();
         }
     }

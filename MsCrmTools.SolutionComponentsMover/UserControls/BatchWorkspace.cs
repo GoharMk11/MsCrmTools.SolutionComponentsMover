@@ -29,6 +29,7 @@ namespace MsCrmTools.SolutionComponentsMover.UserControls
         internal event EventHandler RemoveRequested;
         internal event EventHandler TargetChanged;
         private bool updatingTarget;
+        private Guid? lastTargetId;
         private Control previewContent;
 
         public BatchWorkspace(Button previewButton, CheckBox bestPractice)
@@ -64,8 +65,18 @@ namespace MsCrmTools.SolutionComponentsMover.UserControls
             SetupPage.Controls.Add(setup);
             PreviewHost.Controls.Add(PreviewEmpty); PreviewPage.Controls.Add(PreviewHost);
             ResultsPage.Controls.Add(ResultsSummary);
-            Target.SelectedIndexChanged += (s, e) => { if (!updatingTarget) TargetChanged?.Invoke(this, EventArgs.Empty); };
-            Target.TextUpdate += (s, e) => { if (!updatingTarget) TargetChanged?.Invoke(this, EventArgs.Empty); };
+            Target.SelectedIndexChanged += (s, e) => NotifyTargetChanged();
+            Target.TextChanged += (s, e) => NotifyTargetChanged();
+            Target.SelectionChangeCommitted += (s, e) => NotifyTargetChanged();
+        }
+
+        private void NotifyTargetChanged()
+        {
+            if (updatingTarget) return;
+            var id = SelectedTarget?.Id;
+            if (id == lastTargetId) return;
+            lastTargetId = id;
+            TargetChanged?.Invoke(this, EventArgs.Empty);
         }
 
         internal Entity SelectedTarget => Target.SelectedItem is TargetChoice choice && Target.Text == choice.ToString() ? choice.Entity : null;
@@ -79,7 +90,7 @@ namespace MsCrmTools.SolutionComponentsMover.UserControls
                 Target.Items.AddRange(solutions.Where(s => !s.GetAttributeValue<bool>("ismanaged"))
                     .OrderBy(s => s.GetAttributeValue<string>("friendlyname"))
                     .Select(s => new TargetChoice(s)).ToArray());
-                Target.SelectedIndex = -1;
+                Target.SelectedIndex = -1; lastTargetId = null;
             }
             finally { updatingTarget = false; }
         }
