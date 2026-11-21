@@ -1,4 +1,4 @@
-﻿namespace MsCrmTools.SolutionComponentsMover
+namespace MsCrmTools.SolutionComponentsMover
 {
     partial class MainControl
     {
@@ -13,6 +13,11 @@
         /// <param name="disposing">true si les ressources managées doivent être supprimées ; sinon, false.</param>
         protected override void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                cancelBatch = true;
+                connectionGeneration++;
+            }
             if (disposing && (components != null))
             {
                 components.Dispose();
@@ -120,8 +125,8 @@
             this.tsbCopyComponents.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbCopyComponents.Name = "tsbCopyComponents";
             this.tsbCopyComponents.Size = new System.Drawing.Size(246, 36);
-            this.tsbCopyComponents.Text = "Copy components";
-            this.tsbCopyComponents.ToolTipText = "Copy components from selected source solution(s) to selected target solution(s)";
+            this.tsbCopyComponents.Text = "Copy All";
+            this.tsbCopyComponents.ToolTipText = "Execute the reviewed preview into one target solution";
             this.tsbCopyComponents.Click += new System.EventHandler(this.tsbCopyComponents_Click);
             // 
             // toolStripSeparator3
@@ -222,7 +227,7 @@
             this.gbTarget.Size = new System.Drawing.Size(722, 518);
             this.gbTarget.TabIndex = 3;
             this.gbTarget.TabStop = false;
-            this.gbTarget.Text = "Target solutions";
+            this.gbTarget.Text = "Target Release Solution (select one)";
             // 
             // targetSolutionPicker
             // 
@@ -302,7 +307,7 @@
             this.chkCheckBestPractice.Name = "chkCheckBestPractice";
             this.chkCheckBestPractice.Size = new System.Drawing.Size(499, 29);
             this.chkCheckBestPractice.TabIndex = 0;
-            this.chkCheckBestPractice.Text = "Check best practice before moving components";
+            this.chkCheckBestPractice.Text = "Check best practice before copying components";
             this.chkCheckBestPractice.UseVisualStyleBackColor = true;
             // 
             // MainControl
@@ -334,6 +339,79 @@
             this.PerformLayout();
 
         }
+
+        private void InitializeBatchControls()
+        {
+            pnlBatch = new System.Windows.Forms.TableLayoutPanel
+            {
+                Dock = System.Windows.Forms.DockStyle.Top, Height = 270, ColumnCount = 1, RowCount = 5,
+                Padding = new System.Windows.Forms.Padding(4)
+            };
+            pnlBatch.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24));
+            pnlBatch.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 45));
+            pnlBatch.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34));
+            pnlBatch.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 55));
+            pnlBatch.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 46));
+            lblConnection = new System.Windows.Forms.Label { Dock = System.Windows.Forms.DockStyle.Fill, Text = "Load solutions using a DEV connection." };
+            txtBatchInput = new System.Windows.Forms.TextBox
+            {
+                Multiline = true, ScrollBars = System.Windows.Forms.ScrollBars.Both,
+                Dock = System.Windows.Forms.DockStyle.Fill, WordWrap = false, MaxLength = 0
+            };
+            var buttons = new System.Windows.Forms.FlowLayoutPanel { Dock = System.Windows.Forms.DockStyle.Fill };
+            btnImport = new System.Windows.Forms.Button { AutoSize = true, Text = "Import CSV/TXT" };
+            btnValidate = new System.Windows.Forms.Button { AutoSize = true, Text = "Validate && Select" };
+            btnClearInput = new System.Windows.Forms.Button { AutoSize = true, Text = "Clear input" };
+            btnPreview = new System.Windows.Forms.Button { AutoSize = true, Text = "Preview Components" };
+            buttons.Controls.AddRange(new System.Windows.Forms.Control[] { btnImport, btnValidate, btnClearInput, btnPreview });
+            txtValidation = new System.Windows.Forms.TextBox
+            {
+                Multiline = true, ReadOnly = true, ScrollBars = System.Windows.Forms.ScrollBars.Both,
+                Dock = System.Windows.Forms.DockStyle.Fill, WordWrap = false
+            };
+            lblBatchSummary = new System.Windows.Forms.Label { Dock = System.Windows.Forms.DockStyle.Fill, Text = "Paste one Solution URL, GUID or Unique Name per line. Preview is required before Copy All." };
+            pnlBatch.Controls.Add(lblConnection, 0, 0);
+            pnlBatch.Controls.Add(txtBatchInput, 0, 1);
+            pnlBatch.Controls.Add(buttons, 0, 2);
+            pnlBatch.Controls.Add(txtValidation, 0, 3);
+            pnlBatch.Controls.Add(lblBatchSummary, 0, 4);
+            Controls.Add(pnlBatch);
+            Controls.SetChildIndex(pnlBatch, 1);
+            tsbCancel = new System.Windows.Forms.ToolStripButton("Cancel remaining") { Enabled = false };
+            tslProgress = new System.Windows.Forms.ToolStripLabel("0 / 0");
+            tsMain.Items.Insert(5, tsbCancel);
+            tsMain.Items.Insert(6, tslProgress);
+            tspBatch = new System.Windows.Forms.ToolStripProgressBar { Minimum = 0, Maximum = 100, Value = 0 };
+            tsMain.Items.Insert(7, tspBatch);
+            tsbCopyComponents.Enabled = false;
+            targetSolutionPicker.MultiSelect = false;
+            lvLogs.Columns.Clear();
+            lvLogs.Columns.Add("Source Solution(s)", 210);
+            lvLogs.Columns.Add("Component name", 260);
+            lvLogs.Columns.Add("Component Type", 130);
+            lvLogs.Columns.Add("Component ID", 260);
+            lvLogs.Columns.Add("Target Solution", 180);
+            lvLogs.Columns.Add("Status", 110);
+            lvLogs.Columns.Add("Error Details", 420);
+            lvLogs.Columns.Add("Attempts", 75);
+            lvLogs.Columns.Add("Retry notes", 350);
+            lvLogs.FullRowSelect = true;
+            lvLogs.Resize -= lvLogs_Resize;
+            InitializeTabbedWorkspace();
+        }
+
+        private System.Windows.Forms.TableLayoutPanel pnlBatch;
+        private System.Windows.Forms.TextBox txtBatchInput;
+        private System.Windows.Forms.TextBox txtValidation;
+        private System.Windows.Forms.Button btnImport;
+        private System.Windows.Forms.Button btnValidate;
+        private System.Windows.Forms.Button btnClearInput;
+        private System.Windows.Forms.Button btnPreview;
+        private System.Windows.Forms.Label lblConnection;
+        private System.Windows.Forms.Label lblBatchSummary;
+        private System.Windows.Forms.ToolStripButton tsbCancel;
+        private System.Windows.Forms.ToolStripLabel tslProgress;
+        private System.Windows.Forms.ToolStripProgressBar tspBatch;
 
         #endregion
 

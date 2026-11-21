@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0;net48</TargetFrameworks>
+    <LangVersion>7.3</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="OperationalTests.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/BuildInfo.cs" Link="BuildInfo.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/RunReports.cs" Link="RunReports.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/ContentSnapshots.cs" Link="ContentSnapshots.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/CopyRetry.cs" Link="CopyRetry.cs" />
+    <Compile Include="PreviewTests.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/PreviewNames.cs" Link="PreviewNames.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/SolutionInputParser.cs" Link="SolutionInputParser.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/SolutionManager.cs" Link="SolutionManager.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/BatchPlan.cs" Link="BatchPlan.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/CopySettings.cs" Link="CopySettings.cs" />
+    <Compile Include="EngineTests.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/CsvFormatting.cs" Link="CsvFormatting.cs" />
+    <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.59" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.2" Condition="'$(TargetFramework)' == 'net8.0'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/Forms/RunComparisonForm.cs" Link="RunComparisonForm.cs" />
+    <Reference Include="System.Drawing" />
+    <Compile Include="PickerTests.cs" />
+    <Compile Include="SourceSelectionTests.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/Forms/SourceSelectionForm.cs" Link="SourceSelectionForm.cs" />
+    <Compile Include="WorkspaceTests.cs" />
+    <Compile Include="HostUiTests.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/UserControls/BatchWorkspace.cs" Link="BatchWorkspace.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/Forms/BatchPreviewForm.cs" Link="BatchPreviewForm.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/UserControls/SolutionPicker.cs" Link="SolutionPicker.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/UserControls/SolutionPicker.Designer.cs" Link="SolutionPicker.Designer.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/ListViewColumnSorter.cs" Link="ListViewColumnSorter.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/AppCode/SolutionSelectedEventArgs.cs" Link="SolutionSelectedEventArgs.cs" />
+  </ItemGroup>
+</Project>

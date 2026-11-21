@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
@@ -17,7 +17,7 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
             foreach (ListViewItem listItem in listView.Items)
                 WriteCsvRow(result, listView.Columns.Count, i => listItem.SubItems[i].Text);
 
-            File.WriteAllText(filePath, result.ToString());
+            File.WriteAllText(filePath, result.ToString(), Encoding.UTF8);
         }
 
         private static void WriteCsvRow(StringBuilder result, int itemsCount, Func<int, string> columnValue)
@@ -29,7 +29,7 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
                     result.Append(",");
                 isFirstTime = false;
 
-                result.Append($"\"{columnValue(i)}\"");
+                result.Append(CsvFormatting.Field(columnValue(i)));
             }
             result.AppendLine();
         }

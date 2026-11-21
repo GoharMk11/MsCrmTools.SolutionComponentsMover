@@ -1,4 +1,4 @@
-﻿using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.Collections.Generic;
@@ -76,9 +76,9 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
             {
                 foreach (var component in _solutionComponents)
                 {
-                    var entity = _emc.First(emd => emd.LogicalName == component.GetAttributeValue<string>("primaryentityname"));
+                    var entity = _emc.FirstOrDefault(emd => emd.LogicalName == component.GetAttributeValue<string>("primaryentityname"));
 
-                    lvTypes.Items.Add(new ListViewItem(entity.DisplayName?.UserLocalizedLabel?.Label ?? entity.SchemaName) { Tag = component.GetAttributeValue<int>("objecttypecode"), Checked = true });
+                    lvTypes.Items.Add(new ListViewItem(entity?.DisplayName?.UserLocalizedLabel?.Label ?? entity?.SchemaName ?? ("Component type " + component.GetAttributeValue<int>("objecttypecode"))) { Tag = component.GetAttributeValue<int>("objecttypecode"), Checked = true });
                 }
             }
 
@@ -87,7 +87,7 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
                 lvTypes.Items.Add(new ListViewItem("Model driven app") { Tag = 80, Checked = true });
             }
 
-            foreach (var omd in _omc)
+            foreach (var omd in _omc ?? new OptionMetadataCollection())
             {
                 if (lvTypes.Items.Cast<ListViewItem>().All(o => (int)o.Tag != omd.Value))
                 {
