@@ -73,3 +73,14 @@ Use a disposable DEV organization and 2–3 small unmanaged sources plus a separ
 ### Final observed Windows result
 
 Code commit `33aa280` passed [Windows CI run 43491205219](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/actions/runs/43491205219): production Release build **0 warnings / 0 errors**, native test executable **72 assertions passed** (64 parser/engine/CSV assertions plus 8 actual WinForms picker assertions). Test restore also reports the documented net8 framework-fallback warning. The [Release DLL/PDB artifact](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/actions/runs/43491205219/artifacts/14069423950) was uploaded successfully. The final documentation-only commit skips CI; no production code changed after the tested commit. Actual XrmToolBox hosting and CRM DEV acceptance remain unverified.
+
+
+## Readable table preview update
+
+- Replaced the plain text preview with a resizable, read-only WinForms table showing Component name, Type, Source solution(s), and Planned action. Actions distinguish Add to target, Expand existing coverage and Skip — already included.
+- A header identifies the target, source names and counts, with separate Add/Expand/Skip totals and combined source duplicate count. Search matches names, types, origins, actions and IDs. Technical details (GUID and inclusion behavior) are hidden initially and can be enabled explicitly.
+- All tool UI and log text remains English, as requested.
+- Presentation-only batched queries resolve Web Resource names and common forms/views/workflows/plugin components. Unsupported or inaccessible names show an explicit fallback with IDs in technical details; name lookup faults do not block or alter the copy plan. Reads use the existing connection and run off the UI thread.
+- Copy requests, inclusion rules, dependency handling and source membership preservation are unchanged.
+- Portable suite passes 71 assertions. Windows tests additionally cover the real table's read-only behavior, labels, technical columns and search, and capture a sample preview screenshot. Final Windows evidence and download package are recorded after CI.
+- User-provided evidence confirms the prior read-only preview retrieved 19 memberships / 18 unique Web Resources across three DEV sources; the new friendly-name queries still require user DEV confirmation.

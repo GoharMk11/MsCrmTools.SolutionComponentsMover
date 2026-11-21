@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 #if NET48
 using MsCrmTools.SolutionComponentsMover.Forms;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 #endif
 
 internal static class PreviewTests
@@ -42,6 +45,11 @@ internal static class PreviewTests
             check(form.Grid.ReadOnly && !form.Grid.AllowUserToAddRows && form.Grid.Rows.Count == 1, "preview grid is read-only");
             check(Convert.ToString(form.Grid.Rows[0].Cells["Component"].Value) == component.DisplayName, "grid shows component name");
             check(!form.Grid.Columns["Id"].Visible && !form.Grid.Columns["Behavior"].Visible, "technical fields hidden initially");
+            using (var bitmap = new Bitmap(form.Width, form.Height))
+            {
+                form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, form.Size));
+                bitmap.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "preview-table.png"), ImageFormat.Png);
+            }
             form.Technical.Checked = true;
             check(form.Grid.Columns["Id"].Visible && form.Grid.Columns["Behavior"].Visible, "technical fields toggle");
             form.Search.Text = "not a match";

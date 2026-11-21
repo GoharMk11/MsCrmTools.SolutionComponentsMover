@@ -28,3 +28,8 @@ jobs:
           name: batch-copier-release
           path: MsCrmTools.SolutionComponentsMover/bin/Release/Plugins/*
           if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-table-screenshot
+          path: tests/BatchCopier.Tests/bin/Release/net48/preview-table.png
+          if-no-files-found: error
