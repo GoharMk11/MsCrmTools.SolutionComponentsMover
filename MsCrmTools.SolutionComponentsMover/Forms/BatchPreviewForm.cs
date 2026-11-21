@@ -15,7 +15,7 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
         public BatchPreviewForm(BatchPlan plan, bool embedded = false)
         {
             Text = "Component preview — read only";
-            Width = 1150; Height = 720; MinimumSize = new Size(800, 500);
+            Width = 1150; Height = 720; MinimumSize = embedded ? Size.Empty : new Size(800, 500);
             StartPosition = FormStartPosition.CenterParent;
             AutoScaleMode = AutoScaleMode.Font;
             Font = new Font("Segoe UI", 9F);

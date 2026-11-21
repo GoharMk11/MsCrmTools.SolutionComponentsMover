@@ -88,3 +88,12 @@ Code commit `33aa280` passed [Windows CI run 43491205219](https://github.com/Goh
 ### Table preview Windows validation
 
 Code commit `20445a5` passed [Windows CI](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/actions/runs/44883950188): production Release build 0 warnings / 0 errors and **86 native assertions passed**. The actual preview form was rendered on Windows and its [screenshot](../downloads/preview-table.png) visually inspected. The [download package](../downloads/Batch-Solution-Components-Copier-Windows-Table-Preview-20445a5.zip) contains the unchanged CI DLL/PDB and updated English installation instructions. Names and read-only queries were checked with a fake service; friendly-name retrieval against the user's CRM still awaits their test. Copy behavior is unchanged.
+
+
+## Tabbed workspace update (option C)
+
+- Reorganized the plugin into Setup, Preview and Results tabs, retaining the existing connection, solution picker, validation handlers, preview table and copy engine. All interface and log strings remain English.
+- Setup shows only selected sources, with Paste/Import dialogs, manual source browsing, removal, an explicit searchable unmanaged target choice and collapsed Advanced settings. Full per-input validation remains available in the input dialog; closing it preserves input and manual selections.
+- The preview table now embeds in Preview rather than opening a modal window. The toolbar copy action shows the planned count and is disabled when nothing needs adding. Input/selection/connection/settings changes dispose the stale preview. Result logs/progress and CSV actions are on Results; execution switches to Results and locks setup until completion.
+- Added native workspace tests for tab state, source summaries, explicit targets, collapsed options, embedded preview invalidation, plus a smoke test that loads and instantiates the actual built plugin DLL, verifies source/target wiring and input dialog lifetime, and records its real Windows screenshot without connecting to CRM.
+- Production framework/dependencies and CRM mutation rules are unchanged. Final native CI results and download provenance are recorded after verification.

@@ -25,12 +25,13 @@ The Windows validation workflow also uploads the Release plugin as `batch-copier
 ## Usage
 
 1. Connect XrmToolBox to **DEV**, open Solution Components Mover and select **Load solutions**.
-2. Select sources manually, or paste one HTTPS Solution edit URL, GUID or Unique Name per line. **Import CSV/TXT** accepts the same headerless one-column format (quoted fields are supported). Multi-column/multiline CSV is unsupported.
-3. Select **Validate & Select**. Review every row; fix all invalid inputs. GUIDs/names resolve only in the active organization; URL host, port and organization must match it. Existing manual selections are retained. **Clear input** clears import validation but retains selected sources.
-4. Choose one unmanaged **Target Release Solution** that is not a source.
-5. Select **Preview Components**, choose component types and review counts, source names, target, inclusion behaviors and planned operations. Preview is read-only. Changing input, source/target selection, best-practice settings or connection invalidates it.
-6. Select **Copy All** explicitly. Work is sequential and errors are recorded individually. **Cancel remaining** stops after the current request; completed additions remain and there is no rollback.
-7. Review totals and use **Logs → Export logs** to export the six result columns. Run preview again before retrying. Already-satisfied target coverage is skipped; narrower coverage is scheduled for expansion.
+2. On **Setup**, click **Paste sources...** or **Import CSV/TXT...**. Enter one HTTPS Solution edit URL, GUID or Unique Name per line and use **Validate & Select**. Review every error in that dialog. Headerless single-column CSV/TXT is supported; multi-column/multiline CSV is unsupported. Close the dialog after reviewing results; input is preserved for later editing.
+3. Alternatively use **Add manually...** to select sources (Ctrl/Shift for multiple). Setup displays only selected sources. **Remove selected** removes highlighted source selections. Imported sources preserve existing manual choices.
+4. Choose exactly one unmanaged **Target release solution** in the searchable dropdown. Typing alone is not a valid target choice; select an existing entry. The target must differ from all sources.
+5. **Advanced settings** contains the enabled-by-default best-practice check. Changes to input, selection, target, settings or connection invalidate the existing preview.
+6. Click **Preview components**, choose component types, and review the **Preview** tab's searchable read-only table, source/target names and Add / Expand / Skip actions. Technical IDs and inclusion behavior are available through the checkbox.
+7. On Preview, explicitly click **Copy N components** in the toolbar. If all coverage is satisfied, the button says **Nothing to add** and is disabled. No copy starts from import or tab navigation.
+8. The **Results** tab shows sequential progress, per-component outcomes and totals. **Cancel remaining** stops after the current request; completed additions remain and no rollback occurs. Use **Logs → Export logs** on Results for CSV. Create a fresh preview before retrying.
 
 Dependencies are not automatically added (`AddRequiredComponents=false`). The best-practice check blocks managed entities included with all assets in unmanaged sources; disable it only after deliberately reviewing those entities. Environment variable definitions retain the original rule excluding implicit values/settings.
 
