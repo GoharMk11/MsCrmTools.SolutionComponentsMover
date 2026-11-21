@@ -394,6 +394,7 @@ namespace MsCrmTools.SolutionComponentsMover
             lvLogs.Columns.Add("Error Details", 420);
             lvLogs.FullRowSelect = true;
             lvLogs.Resize -= lvLogs_Resize;
+            InitializeTabbedWorkspace();
         }
 
         private System.Windows.Forms.TableLayoutPanel pnlBatch;

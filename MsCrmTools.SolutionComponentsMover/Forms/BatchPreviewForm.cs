@@ -12,7 +12,7 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
         internal TextBox Search { get; }
         internal CheckBox Technical { get; }
 
-        public BatchPreviewForm(BatchPlan plan)
+        public BatchPreviewForm(BatchPlan plan, bool embedded = false)
         {
             Text = "Component preview — read only";
             Width = 1150; Height = 720; MinimumSize = new Size(800, 500);
@@ -69,9 +69,10 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
             };
             Technical.CheckedChanged += (s, e) => Grid.Columns["Id"].Visible = Grid.Columns["Behavior"].Visible = Technical.Checked;
             var notes = new TextBox { Multiline = true, ReadOnly = true, Dock = DockStyle.Fill, Height = 75, ScrollBars = ScrollBars.Vertical,
-                Text = "Preview only — no CRM changes have been made. Sources will remain unchanged. Close this window, then use Copy All to execute." + Environment.NewLine + string.Join(Environment.NewLine, plan.Warnings) };
+                Text = "Preview only — no CRM changes have been made. Sources will remain unchanged. Use Copy All to execute the reviewed plan." + Environment.NewLine + string.Join(Environment.NewLine, plan.Warnings) };
             var close = new Button { Text = "Close preview", AutoSize = true, Anchor = AnchorStyles.Right, DialogResult = DialogResult.OK };
-            AcceptButton = close; CancelButton = close;
+            close.Visible = !embedded;
+            if (!embedded) { AcceptButton = close; CancelButton = close; }
             layout.Controls.Add(summary, 0, 0); layout.Controls.Add(toolbar, 0, 1); layout.Controls.Add(Grid, 0, 2);
             layout.Controls.Add(notes, 0, 3); layout.Controls.Add(close, 0, 4);
             Controls.Add(layout);

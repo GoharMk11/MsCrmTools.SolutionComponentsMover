@@ -93,6 +93,10 @@
     <Compile Include="Forms\ComponentTypeSelector.Designer.cs">
       <DependentUpon>ComponentTypeSelector.cs</DependentUpon>
     </Compile>
+    <Compile Include="MainControl.Workspace.cs">
+      <DependentUpon>MainControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\BatchWorkspace.cs" />
     <Compile Include="MainControl.Batch.cs">
       <DependentUpon>MainControl.cs</DependentUpon>
     </Compile>

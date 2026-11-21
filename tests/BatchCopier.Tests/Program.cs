@@ -12,13 +12,15 @@ internal static class Program
     }
 
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         ParserTests();
         EngineTests.Run(Check);
         PreviewTests.Run(Check);
 #if NET48
         PickerTests.Run(Check);
+        WorkspaceTests.Run(Check);
+        if (args.Length > 0) HostUiTests.Run(Check, args[0]);
 #endif
         Check(CsvFormatting.Field("a,b") == "\"a,b\"", "CSV comma quoting");
         Check(CsvFormatting.Field("CRM \"fault\"\r\nnext") == "\"CRM \"\"fault\"\"\r\nnext\"", "CSV quotes and newlines");

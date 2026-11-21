@@ -36,6 +36,8 @@ namespace MsCrmTools.SolutionComponentsMover
             targetSolutionPicker.LoadSolutions(new List<Entity>());
             txtValidation.Clear();
             lblConnection.Text = "Connection changed. Load solutions again before validation or preview.";
+            workspace?.SetTargets(new List<Entity>());
+            RefreshWorkspaceSources();
             InvalidatePreview();
         }
 
@@ -54,6 +56,7 @@ namespace MsCrmTools.SolutionComponentsMover
                 importedResults = null;
                 validatedText = null;
                 txtValidation.Clear();
+                RefreshWorkspaceSources();
             };
             btnValidate.Click += (s, e) => ValidateBatchInput();
             btnPreview.Click += (s, e) => PreviewBatch();
@@ -77,7 +80,11 @@ namespace MsCrmTools.SolutionComponentsMover
         private void InvalidatePreview()
         {
             batchPreview = null;
+            workspace?.SetPreview(null);
+            if (workspace != null) workspace.PreviewPage.Text = "Preview";
+            RefreshWorkspaceSources();
             tsbCopyComponents.Enabled = false;
+            UpdateWorkspaceNavigation();
             lblBatchSummary.Text = "Preview required. Target: " + string.Join(", ", targetSolutionPicker.SelectedSolutions
                 .Select(s => s.GetAttributeValue<string>("friendlyname")));
         }
@@ -94,6 +101,8 @@ namespace MsCrmTools.SolutionComponentsMover
             exportLogsToolStripMenuItem.Enabled = !busy;
             tsbCopyComponents.Enabled = !busy && batchPreview != null;
             tsbCancel.Enabled = busy && executing;
+            executionActive = busy && executing;
+            UpdateWorkspaceNavigation();
         }
 
         private bool RequireReady(bool requireValidatedInput)
@@ -148,6 +157,7 @@ namespace MsCrmTools.SolutionComponentsMover
                         string.Join(Environment.NewLine, importedResults.Select(r =>
                             $"Line {r.Input.LineNumber}: {r.Input.Text} — " + (r.Error ??
                             ((r.Duplicate ? "Duplicate: " : "Selected: ") + r.Solution.GetAttributeValue<string>("friendlyname")))));
+                    RefreshWorkspaceSources();
                 }
             });
         }
@@ -201,9 +211,11 @@ namespace MsCrmTools.SolutionComponentsMover
                             $"({batchPreview.Target.GetAttributeValue<string>("uniquename")})" + Environment.NewLine +
                             $"Retrieved: {batchPreview.RetrievedCount} | Unique: {batchPreview.Components.Count} | Already Exists: {batchPreview.ExistingCount} | Planned: {batchPreview.PlannedCount}";
                         lblBatchSummary.Text = summary;
-                        tsbCopyComponents.Enabled = true;
-                        using (var previewDialog = new BatchPreviewForm(batchPreview))
-                            previewDialog.ShowDialog(ParentForm);
+                        var previewView = new BatchPreviewForm(batchPreview, true) { TopLevel = false, FormBorderStyle = FormBorderStyle.None };
+                        workspace.SetPreview(previewView);
+                        workspace.PreviewPage.Text = $"Preview ({batchPreview.Components.Count})";
+                        workspace.Tabs.SelectedTab = workspace.PreviewPage;
+                        UpdateWorkspaceNavigation();
                     }
                 });
             }
@@ -222,6 +234,8 @@ namespace MsCrmTools.SolutionComponentsMover
             lvLogs.Items.Clear();
             tslProgress.Text = "0 / " + plan.Components.Count;
             tspBatch.Value = 0;
+            workspace.ResultsSummary.Text = "Copy in progress. Completed additions remain if cancelled.";
+            workspace.Tabs.SelectedTab = workspace.ResultsPage;
             SetBatchBusy(true, true);
             WorkAsync(new WorkAsyncInfo
             {
@@ -250,6 +264,9 @@ namespace MsCrmTools.SolutionComponentsMover
                     SetBatchBusy(false);
                     if (generation != connectionGeneration) return;
                     lblBatchSummary.Text = $"{(cancelBatch ? "Cancelled" : e.Error != null ? "Stopped" : "Finished")}: Added {added}, Already Exists {existing}, Failed {failed}, Not processed {plan.Components.Count - added - existing - failed}. Completed additions remain. Preview again before re-running.";
+                    workspace.ResultsSummary.Text = lblBatchSummary.Text;
+                    workspace.SetPreview(null);
+                    workspace.PreviewPage.Text = "Preview";
                     if (e.Error != null) ShowBatchError(e.Error);
                 }
             });

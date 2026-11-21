@@ -44,6 +44,8 @@ namespace MsCrmTools.SolutionComponentsMover
             loadedConnectionUrl = null;
             sourceSolutionPicker.LoadSolutions(new List<Entity>());
             targetSolutionPicker.LoadSolutions(new List<Entity>());
+            workspace.SetTargets(new List<Entity>());
+            RefreshWorkspaceSources();
             sManager = new SolutionManager(Service);
             var manager = sManager;
             var service = Service;
@@ -83,6 +85,8 @@ namespace MsCrmTools.SolutionComponentsMover
                     managerSolutions = ((IEnumerable<Entity>)e.Result).ToList();
                     sourceSolutionPicker.LoadSolutions(managerSolutions);
                     targetSolutionPicker.LoadSolutions(managerSolutions);
+                    workspace.SetTargets(managerSolutions);
+                    RefreshWorkspaceSources();
                     loadedConnectionUrl = connectionUrl;
                     lblConnection.Text = "Connected CRM: " + connectionUrl + " — DEV testing only";
                 }

@@ -22,6 +22,9 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Compile Include="PickerTests.cs" />
+    <Compile Include="WorkspaceTests.cs" />
+    <Compile Include="HostUiTests.cs" />
+    <Compile Include="../../MsCrmTools.SolutionComponentsMover/UserControls/BatchWorkspace.cs" Link="BatchWorkspace.cs" />
     <Compile Include="../../MsCrmTools.SolutionComponentsMover/Forms/BatchPreviewForm.cs" Link="BatchPreviewForm.cs" />
     <Compile Include="../../MsCrmTools.SolutionComponentsMover/UserControls/SolutionPicker.cs" Link="SolutionPicker.cs" />
     <Compile Include="../../MsCrmTools.SolutionComponentsMover/UserControls/SolutionPicker.Designer.cs" Link="SolutionPicker.Designer.cs" />

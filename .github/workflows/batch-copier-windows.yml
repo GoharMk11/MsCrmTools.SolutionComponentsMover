@@ -21,7 +21,7 @@ jobs:
       - name: Run parser, fake CRM and WinForms picker tests on .NET Framework
         shell: pwsh
         run: |
-          & ./tests/BatchCopier.Tests/bin/Release/net48/BatchCopier.Tests.exe
+          & ./tests/BatchCopier.Tests/bin/Release/net48/BatchCopier.Tests.exe ./MsCrmTools.SolutionComponentsMover/bin/Release/Plugins/MsCrmTools.SolutionComponentsMover.dll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         with:
@@ -32,4 +32,11 @@ jobs:
         with:
           name: preview-table-screenshot
           path: tests/BatchCopier.Tests/bin/Release/net48/preview-table.png
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tabbed-workspace-screenshots
+          path: |
+            tests/BatchCopier.Tests/bin/Release/net48/workspace-setup.png
+            tests/BatchCopier.Tests/bin/Release/net48/plugin-setup.png
           if-no-files-found: error
