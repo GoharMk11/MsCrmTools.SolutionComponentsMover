@@ -164,12 +164,17 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
             var current = Preview(preview.Settings);
             if (current.Signature != preview.Signature)
                 throw new InvalidOperationException("CRM components changed since preview. Run Preview Components again.");
+            var presentation = preview.Components.ToDictionary(c => c.Key);
             var completed = 0;
             foreach (var component in current.Components)
             {
                 if (cancelled()) return; // An in-flight SDK request completes; no rollback is implied.
+                PlannedComponent namedComponent;
+                presentation.TryGetValue(component.Key, out namedComponent);
                 var result = new ComponentCopyResult
                 {
+                    DisplayName = namedComponent?.DisplayName ?? "Name unavailable",
+                    TypeName = namedComponent?.TypeName ?? "Component type " + component.Type,
                     Source = string.Join("; ", component.Sources), Type = component.Type, Id = component.Id,
                     Target = current.Target.GetAttributeValue<string>("uniquename"), Status = "Already Exists", Error = ""
                 };

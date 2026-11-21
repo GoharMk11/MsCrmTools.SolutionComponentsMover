@@ -51,11 +51,17 @@ internal static partial class EngineTests
         check(crm.Writes.Count == 0, "preview is read-only");
         check(crm.Pages.All(p => p >= 1) && crm.Pages.Contains(3), "explicit first page and subsequent pages");
 
+        foreach (var named in preview.Components)
+        {
+            named.DisplayName = "friendly-name-" + named.Id;
+            named.TypeName = "Readable CRM type";
+        }
         crm.FailId = missing;
         var results = new List<ComponentCopyResult>();
         manager.CopyComponents(preview, () => false, (n, r) => results.Add(r));
         check(results.Count == 5 && results.Count(r => r.Status == "Failed") == 1, "component fault isolation");
         check(results.Single(r => r.Id == missing).Error == "simulated CRM failure", "failure detail retained");
+        check(results.All(r => r.DisplayName == "friendly-name-" + r.Id && r.TypeName == "Readable CRM type"), "results retain preview names for added skipped and failed components");
         check(results.Last().Status == "Added", "continue after failed component");
         check(crm.Writes.Count == 4 && crm.Writes.All(r => !r.AddRequiredComponents), "one request per missing key, dependencies disabled");
         var variableRequest = crm.Writes.Single(r => r.ComponentType == 380);

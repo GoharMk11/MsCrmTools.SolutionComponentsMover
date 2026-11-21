@@ -39,6 +39,8 @@ internal static class HostUiTests
                 var workspaceType = workspace.GetType();
                 var tabs = (TabControl)workspaceType.GetProperty("Tabs", Flags).GetValue(workspace);
                 check(tabs.TabPages.Count == 3 && tabs.SelectedIndex == 0, "actual production plugin constructs on Setup");
+                var resultsList = (ListView)type.GetField("lvLogs", Flags).GetValue(control);
+                check(resultsList.Columns.Cast<ColumnHeader>().Any(c => c.Text == "Component name") && resultsList.Columns.Count == 7, "production Results and CSV include component names");
                 var picker = type.GetField("sourceSolutionPicker", Flags).GetValue(control);
                 var sources = new[] { WorkspaceTests.Solution("Source A"), WorkspaceTests.Solution("Source B"), WorkspaceTests.Solution("Source C") };
                 picker.GetType().GetMethod("LoadSolutions").Invoke(picker, new object[] { sources });

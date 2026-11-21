@@ -387,7 +387,8 @@ namespace MsCrmTools.SolutionComponentsMover
             targetSolutionPicker.MultiSelect = false;
             lvLogs.Columns.Clear();
             lvLogs.Columns.Add("Source Solution(s)", 210);
-            lvLogs.Columns.Add("Component Type", 100);
+            lvLogs.Columns.Add("Component name", 260);
+            lvLogs.Columns.Add("Component Type", 130);
             lvLogs.Columns.Add("Component ID", 260);
             lvLogs.Columns.Add("Target Solution", 180);
             lvLogs.Columns.Add("Status", 110);

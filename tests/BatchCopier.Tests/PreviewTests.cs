@@ -59,6 +59,27 @@ internal static class PreviewTests
             check(Convert.ToString(form.Grid.Rows[0].Cells["Action"].Value) == "Skip — already included", "grid action is explicit");
             form.Close();
         }
+        var newComponent = new PlannedComponent { Id = Guid.NewGuid(), Type = 61, DisplayName = "new.js", TypeName = "Web Resource", Sources = new List<string> { "SourceA" } };
+        var expanded = new PlannedComponent { Id = Guid.NewGuid(), Type = 61, DisplayName = "expand.js", TypeName = "Web Resource", TargetPresent = true, Sources = new List<string> { "SourceA" } };
+        plan.Components = new List<PlannedComponent> { component, newComponent, expanded };
+        var beforeFilter = plan.Signature;
+        using (var filtered = new BatchPreviewForm(plan))
+        {
+            filtered.Show();
+            Func<int> visible = () => filtered.Grid.Rows.Cast<System.Windows.Forms.DataGridViewRow>().Count(r => r.Visible);
+            check(visible() == 3, "all action filter shows complete preview");
+            filtered.ActionFilter.SelectedIndex = 1;
+            check(visible() == 1 && filtered.Grid.Rows.Cast<System.Windows.Forms.DataGridViewRow>().Single(r => r.Visible).Cells["Component"].Value.ToString() == "new.js", "to-add filter excludes existing and expansion rows");
+            filtered.ActionFilter.SelectedIndex = 2;
+            check(visible() == 1 && filtered.Grid.Rows.Cast<System.Windows.Forms.DataGridViewRow>().Single(r => r.Visible).Cells["Action"].Value.ToString().StartsWith("Skip"), "existing filter shows skipped components");
+            filtered.ActionFilter.SelectedIndex = 3;
+            check(visible() == 1 && filtered.Grid.Rows.Cast<System.Windows.Forms.DataGridViewRow>().Single(r => r.Visible).Cells["Component"].Value.ToString() == "expand.js", "expand filter shows coverage expansions");
+            filtered.Search.Text = "new.js";
+            check(visible() == 0 && filtered.VisibleCount.Text == "Showing 0 of 3", "action and text filters combine with visible count");
+            filtered.ActionFilter.SelectedIndex = 1;
+            check(visible() == 1 && plan.Signature == beforeFilter && plan.PlannedCount == 2, "view filtering never narrows the copy plan");
+            filtered.Close();
+        }
 #endif
     }
 

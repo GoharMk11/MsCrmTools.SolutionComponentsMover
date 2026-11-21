@@ -43,6 +43,8 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
 
     internal sealed class ComponentCopyResult
     {
+        public string DisplayName { get; set; }
+        public string TypeName { get; set; }
         public string Source { get; set; }
         public int Type { get; set; }
         public Guid Id { get; set; }

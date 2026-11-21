@@ -11,6 +11,8 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
         internal DataGridView Grid { get; }
         internal TextBox Search { get; }
         internal CheckBox Technical { get; }
+        internal ComboBox ActionFilter { get; }
+        internal Label VisibleCount { get; }
 
         public BatchPreviewForm(BatchPlan plan, bool embedded = false)
         {
@@ -36,7 +38,11 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
             toolbar.Controls.Add(new Label { Text = "Search:", AutoSize = true, Padding = new Padding(0, 5, 0, 0) });
             Search = new TextBox { Width = 300, AccessibleName = "Search preview components" };
             Technical = new CheckBox { Text = "Show technical details", AutoSize = true, Padding = new Padding(12, 2, 0, 0) };
-            toolbar.Controls.Add(Search); toolbar.Controls.Add(Technical);
+            ActionFilter = new ComboBox { Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, AccessibleName = "Filter planned actions" };
+            ActionFilter.Items.AddRange(new object[] { "All actions", "To add", "Existing", "Expand" });
+            ActionFilter.SelectedIndex = 0;
+            VisibleCount = new Label { AutoSize = true, Padding = new Padding(8, 5, 0, 0) };
+            toolbar.Controls.Add(Search); toolbar.Controls.Add(ActionFilter); toolbar.Controls.Add(Technical); toolbar.Controls.Add(VisibleCount);
             Grid = new DataGridView
             {
                 Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, AllowUserToDeleteRows = false,
@@ -58,24 +64,40 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
                     component.TypeName ?? "Component type " + component.Type, string.Join("; ", component.Sources),
                     component.ActionLabel, component.Id.ToString(), Inclusion(component.Behavior));
                 var row = Grid.Rows[index];
+                row.Tag = component;
                 row.DefaultCellStyle.BackColor = component.AlreadyExists ? Color.WhiteSmoke : component.TargetPresent ? Color.AliceBlue : Color.Honeydew;
                 row.Cells["Component"].ToolTipText = component.NameWarning ?? component.DisplayName ?? "Name lookup is not available for this component type.";
             }
-            Search.TextChanged += (s, e) =>
-            {
-                Grid.CurrentCell = null;
-                foreach (DataGridViewRow row in Grid.Rows)
-                    row.Visible = row.Cells.Cast<DataGridViewCell>().Any(c => Convert.ToString(c.Value).IndexOf(Search.Text, StringComparison.OrdinalIgnoreCase) >= 0);
-            };
+            Search.TextChanged += (s, e) => ApplyFilters();
+            ActionFilter.SelectedIndexChanged += (s, e) => ApplyFilters();
+            ApplyFilters();
             Technical.CheckedChanged += (s, e) => Grid.Columns["Id"].Visible = Grid.Columns["Behavior"].Visible = Technical.Checked;
             var notes = new TextBox { Multiline = true, ReadOnly = true, Dock = DockStyle.Fill, Height = 75, ScrollBars = ScrollBars.Vertical,
-                Text = "Preview only — no CRM changes have been made. Sources will remain unchanged. Use Copy All to execute the reviewed plan." + Environment.NewLine + string.Join(Environment.NewLine, plan.Warnings) };
+                Text = "Preview only — no CRM changes have been made. Sources will remain unchanged. Filters affect this view only; copying uses the full reviewed plan." + Environment.NewLine + string.Join(Environment.NewLine, plan.Warnings) };
             var close = new Button { Text = "Close preview", AutoSize = true, Anchor = AnchorStyles.Right, DialogResult = DialogResult.OK };
             close.Visible = !embedded;
             if (!embedded) { AcceptButton = close; CancelButton = close; }
             layout.Controls.Add(summary, 0, 0); layout.Controls.Add(toolbar, 0, 1); layout.Controls.Add(Grid, 0, 2);
             layout.Controls.Add(notes, 0, 3); layout.Controls.Add(close, 0, 4);
             Controls.Add(layout);
+        }
+
+        private void ApplyFilters()
+        {
+            Grid.CurrentCell = null;
+            var visible = 0;
+            foreach (DataGridViewRow row in Grid.Rows)
+            {
+                var component = (PlannedComponent)row.Tag;
+                var actionMatches = ActionFilter.SelectedIndex == 0 ||
+                    (ActionFilter.SelectedIndex == 1 && !component.AlreadyExists && !component.TargetPresent) ||
+                    (ActionFilter.SelectedIndex == 2 && component.AlreadyExists) ||
+                    (ActionFilter.SelectedIndex == 3 && !component.AlreadyExists && component.TargetPresent);
+                row.Visible = actionMatches && row.Cells.Cast<DataGridViewCell>().Any(c =>
+                    Convert.ToString(c.Value).IndexOf(Search.Text, StringComparison.OrdinalIgnoreCase) >= 0);
+                if (row.Visible) visible++;
+            }
+            VisibleCount.Text = $"Showing {visible} of {Grid.Rows.Count}";
         }
 
         private void AddColumn(string name, string title, int weight)

@@ -251,7 +251,7 @@ namespace MsCrmTools.SolutionComponentsMover
                     if (result.Status == "Added") added++;
                     else if (result.Status == "Already Exists") existing++;
                     else failed++;
-                    var item = new ListViewItem(new[] { result.Source, result.Type.ToString(), result.Id.ToString(),
+                    var item = new ListViewItem(new[] { result.Source, result.DisplayName, result.TypeName, result.Id.ToString(),
                         result.Target, result.Status, result.Error });
                     item.ForeColor = result.Status == "Failed" ? Color.Red : Color.DarkGreen;
                     lvLogs.Items.Add(item);
