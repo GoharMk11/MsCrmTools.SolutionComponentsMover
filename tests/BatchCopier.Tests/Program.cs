@@ -19,6 +19,7 @@ internal static class Program
         PreviewTests.Run(Check);
 #if NET48
         PickerTests.Run(Check);
+        SourceSelectionTests.Run(Check);
         WorkspaceTests.Run(Check);
         if (args.Length > 0) HostUiTests.Run(Check, args[0]);
 #endif

@@ -1,5 +1,6 @@
 using Microsoft.Xrm.Sdk;
 using MsCrmTools.SolutionComponentsMover.UserControls;
+using MsCrmTools.SolutionComponentsMover.Forms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -100,12 +101,12 @@ namespace MsCrmTools.SolutionComponentsMover
         private void OpenManualSources()
         {
             if (!RequireReady(false)) return;
-            using (var dialog = new Form { Text = "Select source solutions — Ctrl/Shift selects multiple", Width = 1000, Height = 620, StartPosition = FormStartPosition.CenterParent })
+            // Browse in an isolated picker: normal single clicks must not replace imported sources.
+            var existing = sourceSolutionPicker.SelectedSolutions.Select(s => s.Id).ToList();
+            using (var dialog = new SourceSelectionForm(managerSolutions, existing))
             {
-                sourceSolutionPicker.Dock = DockStyle.Fill;
-                dialog.Controls.Add(sourceSolutionPicker);
-                try { dialog.ShowDialog(ParentForm); }
-                finally { dialog.Controls.Remove(sourceSolutionPicker); workspaceStorage.Controls.Add(sourceSolutionPicker); }
+                if (dialog.ShowDialog(ParentForm) == DialogResult.OK)
+                    sourceSolutionPicker.SelectSolutionsByIds(dialog.SelectedSourceIds);
             }
             RefreshWorkspaceSources();
         }
