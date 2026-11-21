@@ -1,5 +1,4 @@
 using MsCrmTools.SolutionComponentsMover.AppCode;
-using Microsoft.Xrm.Sdk;
 using System;
 using System.Drawing;
 using System.Linq;
