@@ -19,6 +19,7 @@ internal static partial class EngineTests
         check(!ComponentCoverage.Satisfies(null, 0), "unknown coverage cannot satisfy explicit coverage");
         ExpectFailure(() => ComponentCoverage.Merge(new int?[] { null, 0 }), check, "ambiguous merge blocked");
 
+        ChangeGuardIntegration(check);
         var crm = new FakeCrm();
         var source1 = crm.Solution("SourceOne");
         var source2 = crm.Solution("SourceTwo");
@@ -123,6 +124,35 @@ internal static partial class EngineTests
         }
     }
 
+    private static void ChangeGuardIntegration(Action<bool, string> check)
+    {
+        var crm = new FakeCrm(); var source = crm.Solution("GuardSource"); var target = crm.Solution("GuardTarget");
+        var first = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var second = Guid.Parse("00000000-0000-0000-0000-000000000002");
+        crm.Component(source, first, 61, 0); crm.Component(source, second, 61, 0);
+        crm.ContentRows[first] = new Entity("webresource", first) { ["content"] = "first original", ["name"] = "first.js" };
+        crm.ContentRows[second] = new Entity("webresource", second) { ["content"] = "second original", ["name"] = "second.js" };
+        var settings = new CopySettings { SourceSolutions = new List<Entity> { source }, TargetSolutions = new List<Entity> { target }, AllComponents = true, OrganizationMajorVersion = 9 };
+        var manager = new SolutionManager(crm, delay => { });
+        var preview = manager.Preview(settings); ContentSnapshots.Capture(preview, crm);
+        crm.ContentRows[first]["content"] = "edited before copy";
+        ExpectFailure(() => manager.CopyComponents(preview, () => false, (n, r) => { }), check, "engine blocks edited content before any writes");
+        check(crm.Writes.Count == 0, "stale content does not modify CRM");
+        crm.ContentRows[first]["content"] = "first original";
+        preview = manager.Preview(settings); ContentSnapshots.Capture(preview, crm);
+        crm.AfterWrite = () => crm.ContentRows[second]["content"] = "edited during copy";
+        var recorded = new List<ComponentCopyResult>();
+        ExpectFailure(() => manager.CopyComponents(preview, () => false, (n, r) => recorded.Add(r)), check, "engine stops a batch when a later component changes");
+        check(crm.Writes.Count == 1 && recorded.Count == 1 && recorded[0].Status == "Added", "mid-batch stop preserves completed results and performs no stale second write");
+        var retryCrm = new FakeCrm(); var retrySource = retryCrm.Solution("RetrySource"); var retryTarget = retryCrm.Solution("RetryTarget");
+        retryCrm.Component(retrySource, first, 61, 0);
+        retryCrm.AfterWrite = () => { throw new TimeoutException("reply lost after adding membership"); };
+        var retryManager = new SolutionManager(retryCrm, delay => { });
+        var retryPlan = retryManager.Preview(new CopySettings { SourceSolutions = new List<Entity> { retrySource }, TargetSolutions = new List<Entity> { retryTarget }, AllComponents = true, OrganizationMajorVersion = 9 });
+        recorded.Clear(); retryManager.CopyComponents(retryPlan, () => false, (n, r) => recorded.Add(r));
+        check(retryCrm.Writes.Count == 1 && recorded.Single().Status == "Added" && recorded[0].Attempts == 1 && recorded[0].RetryNotes.Contains("confirmed"), "engine verifies target coverage after timeout without duplicate writes");
+    }
+
     private static void ExpectFailure(Action action, Action<bool, string> check, string message)
     {
         try { action(); }
@@ -139,6 +169,8 @@ internal static partial class EngineTests
         public readonly EntityMetadataCollection ManagedEntities = new EntityMetadataCollection();
         public int PageSize = 5000;
         public Guid? FailId;
+        public Action AfterWrite;
+        public readonly Dictionary<Guid, Entity> ContentRows = new Dictionary<Guid, Entity>();
 
         public Entity Solution(string name)
         {
@@ -164,6 +196,11 @@ internal static partial class EngineTests
         public EntityCollection RetrieveMultiple(QueryBase queryBase)
         {
             var query = (QueryExpression)queryBase;
+            if (query.EntityName == "webresource")
+            {
+                var ids = query.Criteria.Conditions[0].Values.Cast<Guid>().ToList();
+                return new EntityCollection(ids.Where(id => ContentRows.ContainsKey(id)).Select(id => ContentRows[id]).ToList());
+            }
             var rows = (query.EntityName == "solution" ? Solutions : Components).AsEnumerable();
             foreach (var condition in query.Criteria.Conditions)
             {
@@ -203,6 +240,7 @@ internal static partial class EngineTests
             var behavior = add.DoNotIncludeSubcomponents ? 1 : 0;
             if (existing == null) Component(target, add.ComponentId, add.ComponentType, behavior);
             else existing["rootcomponentbehavior"] = new OptionSetValue(behavior);
+            AfterWrite?.Invoke();
             return new AddSolutionComponentResponse();
         }
         public Guid Create(Entity entity) => throw new NotSupportedException();

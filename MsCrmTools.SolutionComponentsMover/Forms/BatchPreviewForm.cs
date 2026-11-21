@@ -13,6 +13,9 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
         internal CheckBox Technical { get; }
         internal ComboBox ActionFilter { get; }
         internal Label VisibleCount { get; }
+        internal event EventHandler SaveBaselineRequested;
+        internal event EventHandler CompareRequested;
+        internal event EventHandler LoadComparisonRequested;
 
         public BatchPreviewForm(BatchPlan plan, bool embedded = false)
         {
@@ -43,6 +46,13 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
             ActionFilter.SelectedIndex = 0;
             VisibleCount = new Label { AutoSize = true, Padding = new Padding(8, 5, 0, 0) };
             toolbar.Controls.Add(Search); toolbar.Controls.Add(ActionFilter); toolbar.Controls.Add(Technical); toolbar.Controls.Add(VisibleCount);
+            var baseline = new Button { Text = "Save baseline", AutoSize = true, Enabled = plan.OrganizationId != Guid.Empty };
+            var compare = new Button { Text = "Compare previous run", AutoSize = true, Enabled = plan.PreviousRun != null };
+            var load = new Button { Text = "Load report to compare...", AutoSize = true, Enabled = plan.OrganizationId != Guid.Empty };
+            baseline.Click += (s, e) => SaveBaselineRequested?.Invoke(this, EventArgs.Empty);
+            compare.Click += (s, e) => CompareRequested?.Invoke(this, EventArgs.Empty);
+            load.Click += (s, e) => LoadComparisonRequested?.Invoke(this, EventArgs.Empty);
+            toolbar.Controls.Add(baseline); toolbar.Controls.Add(compare); toolbar.Controls.Add(load);
             Grid = new DataGridView
             {
                 Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, AllowUserToDeleteRows = false,
@@ -56,13 +66,14 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
             AddColumn("Action", "Planned action", 25);
             AddColumn("Id", "Component ID", 30);
             AddColumn("Behavior", "Inclusion", 20);
-            Grid.Columns["Id"].Visible = Grid.Columns["Behavior"].Visible = false;
+            AddColumn("Tracking", "Change detection", 30);
+            Grid.Columns["Id"].Visible = Grid.Columns["Behavior"].Visible = Grid.Columns["Tracking"].Visible = false;
             Grid.Columns["Sources"].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
             foreach (var component in plan.Components.OrderBy(c => c.TypeName).ThenBy(c => c.DisplayName ?? c.Id.ToString()))
             {
                 var index = Grid.Rows.Add(component.DisplayName ?? "Name unavailable (see technical details)",
                     component.TypeName ?? "Component type " + component.Type, string.Join("; ", component.Sources),
-                    component.ActionLabel, component.Id.ToString(), Inclusion(component.Behavior));
+                    component.ActionLabel, component.Id.ToString(), Inclusion(component.Behavior), component.Tracking ?? "Not tracked");
                 var row = Grid.Rows[index];
                 row.Tag = component;
                 row.DefaultCellStyle.BackColor = component.AlreadyExists ? Color.WhiteSmoke : component.TargetPresent ? Color.AliceBlue : Color.Honeydew;
@@ -71,7 +82,7 @@ namespace MsCrmTools.SolutionComponentsMover.Forms
             Search.TextChanged += (s, e) => ApplyFilters();
             ActionFilter.SelectedIndexChanged += (s, e) => ApplyFilters();
             ApplyFilters();
-            Technical.CheckedChanged += (s, e) => Grid.Columns["Id"].Visible = Grid.Columns["Behavior"].Visible = Technical.Checked;
+            Technical.CheckedChanged += (s, e) => Grid.Columns["Id"].Visible = Grid.Columns["Behavior"].Visible = Grid.Columns["Tracking"].Visible = Technical.Checked;
             var notes = new TextBox { Multiline = true, ReadOnly = true, Dock = DockStyle.Fill, Height = 75, ScrollBars = ScrollBars.Vertical,
                 Text = "Preview only — no CRM changes have been made. Sources will remain unchanged. Filters affect this view only; copying uses the full reviewed plan." + Environment.NewLine + string.Join(Environment.NewLine, plan.Warnings) };
             var close = new Button { Text = "Close preview", AutoSize = true, Anchor = AnchorStyles.Right, DialogResult = DialogResult.OK };

@@ -393,6 +393,8 @@ namespace MsCrmTools.SolutionComponentsMover
             lvLogs.Columns.Add("Target Solution", 180);
             lvLogs.Columns.Add("Status", 110);
             lvLogs.Columns.Add("Error Details", 420);
+            lvLogs.Columns.Add("Attempts", 75);
+            lvLogs.Columns.Add("Retry notes", 350);
             lvLogs.FullRowSelect = true;
             lvLogs.Resize -= lvLogs_Resize;
             InitializeTabbedWorkspace();

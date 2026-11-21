@@ -14,11 +14,13 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
     internal class SolutionManager
     {
         private readonly IOrganizationService service;
+        private readonly Action<TimeSpan> retryWait;
 
 
-        public SolutionManager(IOrganizationService service)
+        public SolutionManager(IOrganizationService service, Action<TimeSpan> retryWait = null)
         {
             this.service = service;
+            this.retryWait = retryWait;
         }
 
         public IEnumerable<Entity> RetrieveSolutions()
@@ -158,12 +160,13 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
             return component.GetAttributeValue<OptionSetValue>("componenttype").Value + ":" + component.GetAttributeValue<Guid>("objectid");
         }
 
-        internal void CopyComponents(BatchPlan preview, Func<bool> cancelled, Action<int, ComponentCopyResult> report)
+        internal void CopyComponents(BatchPlan preview, Func<bool> cancelled, Action<int, ComponentCopyResult> report, Action<int, string> recovery = null)
         {
             // Re-read and validate immediately before writes. Changed coverage requires a new preview.
             var current = Preview(preview.Settings);
             if (current.Signature != preview.Signature)
                 throw new InvalidOperationException("CRM components changed since preview. Run Preview Components again.");
+            ContentSnapshots.Validate(preview, service);
             var presentation = preview.Components.ToDictionary(c => c.Key);
             var completed = 0;
             foreach (var component in current.Components)
@@ -180,31 +183,52 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
                 };
                 if (!component.AlreadyExists)
                 {
+                    RetryOutcome outcome;
                     try
                     {
-                        var request = new AddSolutionComponentRequest
+                        outcome = CopyRetry.Execute(() =>
                         {
-                            AddRequiredComponents = false, ComponentId = component.Id, ComponentType = component.Type,
-                            SolutionUniqueName = result.Target
-                        };
-                        if (preview.Settings.OrganizationMajorVersion >= 8)
-                            request.DoNotIncludeSubcomponents = component.Behavior == 1 || component.Behavior == 2;
-                        if (component.Type == ComponentTypes.EnvironmentVariableDefinition)
-                        {
-                            request.DoNotIncludeSubcomponents = true;
-                            request.IncludedComponentSettingsValues = Array.Empty<string>();
-                        }
-                        service.Execute(request);
-                        result.Status = "Added";
+                            ContentSnapshots.ValidateOne(namedComponent ?? component, service);
+                            var request = new AddSolutionComponentRequest
+                            {
+                                AddRequiredComponents = false, ComponentId = component.Id, ComponentType = component.Type,
+                                SolutionUniqueName = result.Target
+                            };
+                            if (preview.Settings.OrganizationMajorVersion >= 8)
+                                request.DoNotIncludeSubcomponents = component.Behavior == 1 || component.Behavior == 2;
+                            if (component.Type == ComponentTypes.EnvironmentVariableDefinition)
+                            {
+                                request.DoNotIncludeSubcomponents = true;
+                                request.IncludedComponentSettingsValues = Array.Empty<string>();
+                            }
+                            service.Execute(request);
+                        }, () => TargetSatisfies(current.Target.Id, component), cancelled, recovery, retryWait);
                     }
-                    catch (Exception error)
+                    catch (StaleContentException stale)
                     {
-                        result.Status = "Failed";
-                        result.Error = error.Message;
+                        if (stale.PreviousWriteAttempts > 0)
+                        {
+                            result.Status = "Unconfirmed"; result.Attempts = stale.PreviousWriteAttempts;
+                            result.Error = stale.Message + " An earlier transient request was not confirmed; review target coverage.";
+                            report(++completed, result);
+                        }
+                        throw;
                     }
+                    if (outcome.Status == "Not processed") return;
+                    result.Status = outcome.Status; result.Error = outcome.Error;
+                    result.Attempts = outcome.Attempts; result.RetryNotes = outcome.Notes;
                 }
                 report(++completed, result);
             }
+        }
+
+        private bool TargetSatisfies(Guid target, PlannedComponent component)
+        {
+            var query = new QueryExpression("solutioncomponent") { ColumnSet = new ColumnSet("rootcomponentbehavior") };
+            query.Criteria.AddCondition("solutionid", ConditionOperator.Equal, target);
+            query.Criteria.AddCondition("objectid", ConditionOperator.Equal, component.Id);
+            query.Criteria.AddCondition("componenttype", ConditionOperator.Equal, component.Type);
+            return RetrieveAll(query).Any(c => ComponentCoverage.Satisfies(ComponentCoverage.Behavior(c), component.Behavior));
         }
 
         internal List<Entity> RetrieveComponentsFromSolutions(List<Guid> solutionsIds, List<int> componentsTypes, bool allComponents)

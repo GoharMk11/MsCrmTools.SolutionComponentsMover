@@ -40,7 +40,14 @@ internal static class HostUiTests
                 var tabs = (TabControl)workspaceType.GetProperty("Tabs", Flags).GetValue(workspace);
                 check(tabs.TabPages.Count == 3 && tabs.SelectedIndex == 0, "actual production plugin constructs on Setup");
                 var resultsList = (ListView)type.GetField("lvLogs", Flags).GetValue(control);
-                check(resultsList.Columns.Cast<ColumnHeader>().Any(c => c.Text == "Component name") && resultsList.Columns.Count == 7, "production Results and CSV include component names");
+                check(resultsList.Columns.Cast<ColumnHeader>().Any(c => c.Text == "Component name") && resultsList.Columns.Count == 9, "production Results and CSV include component names");
+                var buildLabel = (Label)workspaceType.GetProperty("BuildStatus", Flags).GetValue(workspace);
+                var revision = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+                check(revision.Length == 40 && buildLabel.Text.Contains(revision.Substring(0, 7)), "production build label shows the exact compiled Git revision");
+                var exportButton = (ToolStripButton)type.GetField("exportRunReport", Flags).GetValue(control);
+                tabs.SelectedIndex = 2;
+                check(exportButton.Visible && !exportButton.Enabled, "production run-report export appears on Results and requires an actual report");
+                tabs.SelectedIndex = 0;
                 var picker = type.GetField("sourceSolutionPicker", Flags).GetValue(control);
                 var sources = new[] { WorkspaceTests.Solution("Source A"), WorkspaceTests.Solution("Source B"), WorkspaceTests.Solution("Source C") };
                 picker.GetType().GetMethod("LoadSolutions").Invoke(picker, new object[] { sources });

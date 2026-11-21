@@ -1,4 +1,5 @@
 using McTools.Xrm.Connection;
+using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using MsCrmTools.SolutionComponentsMover.AppCode;
 using MsCrmTools.SolutionComponentsMover.Forms;
@@ -190,6 +191,7 @@ namespace MsCrmTools.SolutionComponentsMover
                 var generation = connectionGeneration;
                 var manager = sManager;
                 var previewService = Service;
+                var previewUrl = loadedConnectionUrl;
                 SetBatchBusy(true);
                 WorkAsync(new WorkAsyncInfo
                 {
@@ -197,7 +199,12 @@ namespace MsCrmTools.SolutionComponentsMover
                     Work = (bw, e) =>
                     {
                         var plan = manager.Preview(settings);
+                        var identity = (WhoAmIResponse)previewService.Execute(new WhoAmIRequest());
+                        plan.OrganizationId = identity.OrganizationId; plan.UserId = identity.UserId; plan.EnvironmentUrl = previewUrl;
                         PreviewNames.Populate(plan, previewService, _omc);
+                        ContentSnapshots.Capture(plan, previewService);
+                        try { plan.PreviousRun = runHistory.Latest(plan.OrganizationId, plan.Target.Id); }
+                        catch (Exception historyError) { plan.Warnings.Add("Previous local report could not be loaded: " + historyError.Message); }
                         e.Result = plan;
                     },
                     PostWorkCallBack = e =>
@@ -212,6 +219,7 @@ namespace MsCrmTools.SolutionComponentsMover
                             $"Retrieved: {batchPreview.RetrievedCount} | Unique: {batchPreview.Components.Count} | Already Exists: {batchPreview.ExistingCount} | Planned: {batchPreview.PlannedCount}";
                         lblBatchSummary.Text = summary;
                         var previewView = new BatchPreviewForm(batchPreview, true) { TopLevel = false, FormBorderStyle = FormBorderStyle.None };
+                        WirePreviewHistory(previewView, batchPreview);
                         workspace.SetPreview(previewView);
                         workspace.PreviewPage.Text = $"Preview ({batchPreview.Components.Count})";
                         workspace.Tabs.SelectedTab = workspace.PreviewPage;
@@ -230,6 +238,9 @@ namespace MsCrmTools.SolutionComponentsMover
             var added = 0;
             var existing = 0;
             var failed = 0;
+            var unconfirmed = 0;
+            var runReport = RunReport.Create(plan, "Running");
+            lastRunReport = runReport;
             cancelBatch = false;
             lvLogs.Items.Clear();
             tslProgress.Text = "0 / " + plan.Components.Count;
@@ -240,20 +251,39 @@ namespace MsCrmTools.SolutionComponentsMover
             WorkAsync(new WorkAsyncInfo
             {
                 Message = "Copying components sequentially...",
-                Work = (bw, e) => manager.CopyComponents(plan, () => cancelBatch,
-                    (count, result) => bw.ReportProgress(plan.Components.Count == 0 ? 100 : (int)(100.0 * count / plan.Components.Count), Tuple.Create(count, result))),
+                Work = (bw, e) =>
+                {
+                    PersistRunReport(runReport);
+                    try
+                    {
+                        manager.CopyComponents(plan, () => cancelBatch, (count, result) =>
+                        {
+                            runReport.Add(result); PersistRunReport(runReport);
+                            bw.ReportProgress(plan.Components.Count == 0 ? 100 : (int)(100.0 * count / plan.Components.Count), Tuple.Create(count, result));
+                        }, (attempt, message) => bw.ReportProgress(-1, message));
+                    }
+                    catch (Exception error) { runReport.Error = error.Message; throw; }
+                    finally
+                    {
+                        runReport.Status = cancelBatch ? "Cancelled" : runReport.Error != null ? "Stopped" : runReport.Results.Any(r => r.Status == "Failed" || r.Status == "Unconfirmed") ? "Finished with issues" : "Finished";
+                        runReport.FinishedUtc = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
+                        PersistRunReport(runReport);
+                    }
+                },
                 ProgressChanged = e =>
                 {
                     if (generation != connectionGeneration) return;
+                    if (e.UserState is string recoveryMessage) { tslProgress.Text = recoveryMessage; return; }
                     var progress = (Tuple<int, ComponentCopyResult>)e.UserState;
                     var result = progress.Item2;
                     tspBatch.Value = e.ProgressPercentage;
                     if (result.Status == "Added") added++;
                     else if (result.Status == "Already Exists") existing++;
+                    else if (result.Status == "Unconfirmed") unconfirmed++;
                     else failed++;
                     var item = new ListViewItem(new[] { result.Source, result.DisplayName, result.TypeName, result.Id.ToString(),
-                        result.Target, result.Status, result.Error });
-                    item.ForeColor = result.Status == "Failed" ? Color.Red : Color.DarkGreen;
+                        result.Target, result.Status, result.Error, result.Attempts.ToString(), result.RetryNotes ?? "" });
+                    item.ForeColor = result.Status == "Failed" ? Color.Red : result.Status == "Unconfirmed" ? Color.DarkOrange : Color.DarkGreen;
                     lvLogs.Items.Add(item);
                     tslProgress.Text = progress.Item1 + " / " + plan.Components.Count;
                 },
@@ -263,8 +293,8 @@ namespace MsCrmTools.SolutionComponentsMover
                     if (IsDisposed || Disposing) return;
                     SetBatchBusy(false);
                     if (generation != connectionGeneration) return;
-                    lblBatchSummary.Text = $"{(cancelBatch ? "Cancelled" : e.Error != null ? "Stopped" : "Finished")}: Added {added}, Already Exists {existing}, Failed {failed}, Not processed {plan.Components.Count - added - existing - failed}. Completed additions remain. Preview again before re-running.";
-                    workspace.ResultsSummary.Text = lblBatchSummary.Text;
+                    lblBatchSummary.Text = $"{(cancelBatch ? "Cancelled" : e.Error != null ? "Stopped" : "Finished")}: Added {added}, Already Exists {existing}, Failed {failed}, Unconfirmed {unconfirmed}, Not processed {plan.Components.Count - added - existing - failed - unconfirmed}. Completed additions remain. Preview again before re-running.";
+                    workspace.ResultsSummary.Text = lblBatchSummary.Text + Environment.NewLine + (runReport.PersistenceWarning ?? "Run report saved locally. Use Export run report for summary, results and the selected plan.");
                     workspace.SetPreview(null);
                     workspace.PreviewPage.Text = "Preview";
                     if (e.Error != null) ShowBatchError(e.Error);

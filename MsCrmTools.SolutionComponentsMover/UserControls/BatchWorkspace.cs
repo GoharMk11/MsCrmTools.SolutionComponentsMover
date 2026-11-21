@@ -1,4 +1,5 @@
 using Microsoft.Xrm.Sdk;
+using MsCrmTools.SolutionComponentsMover.AppCode;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -15,6 +16,7 @@ namespace MsCrmTools.SolutionComponentsMover.UserControls
         internal TabPage PreviewPage { get; } = new TabPage("Preview");
         internal TabPage ResultsPage { get; } = new TabPage("Results");
         internal Label ConnectionStatus { get; } = new Label { AutoSize = true, Dock = DockStyle.Fill, Text = "Load solutions using a DEV connection.", Padding = new Padding(8) };
+        internal Label BuildStatus { get; } = new Label { AutoSize = true, Dock = DockStyle.Fill, Text = BuildInfo.Display, Padding = new Padding(8, 0, 8, 4) };
         internal Label ValidationStatus { get; } = new Label { AutoSize = true, Text = "No sources selected.", Padding = new Padding(0, 8, 0, 4) };
         internal ListView Sources { get; } = new ListView { Dock = DockStyle.Fill, View = View.Details, FullRowSelect = true, HideSelection = false };
         internal ComboBox Target { get; } = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDown, AutoCompleteMode = AutoCompleteMode.SuggestAppend, AutoCompleteSource = AutoCompleteSource.ListItems };
@@ -37,10 +39,11 @@ namespace MsCrmTools.SolutionComponentsMover.UserControls
             Dock = DockStyle.Fill;
             Font = new Font("Segoe UI", 9F);
             Tabs.TabPages.AddRange(new[] { SetupPage, PreviewPage, ResultsPage });
-            var outer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2 };
+            var outer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3 };
+            outer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             outer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             outer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            outer.Controls.Add(ConnectionStatus, 0, 0); outer.Controls.Add(Tabs, 0, 1); Controls.Add(outer);
+            outer.Controls.Add(ConnectionStatus, 0, 0); outer.Controls.Add(BuildStatus, 0, 1); outer.Controls.Add(Tabs, 0, 2); Controls.Add(outer);
             var setup = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7, Padding = new Padding(16) };
             setup.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             setup.RowStyles.Add(new RowStyle(SizeType.AutoSize));

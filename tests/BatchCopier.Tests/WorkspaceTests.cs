@@ -53,6 +53,15 @@ internal static class WorkspaceTests
             workspace.SetSources(new[] { source, target });
             workspace.Tabs.SelectedTab = workspace.SetupPage;
             check(workspace.Sources.Items.Count == 2 && workspace.SelectedTarget?.Id == target.Id, "tab navigation retains selections");
+            plan.OrganizationId = Guid.NewGuid();
+            var oldPlan = RunReport.Create(plan, "Preview baseline");
+            plan.Components.Add(new PlannedComponent { Id = Guid.NewGuid(), Type = 61, DisplayName = "new.js", Sources = new List<string> { "SourceA" } });
+            using (var comparison = new RunComparisonForm(oldPlan, RunReport.Create(plan, "Current preview")))
+            {
+                comparison.Show();
+                check(comparison.Grid.ReadOnly && comparison.Grid.Rows.Count == 1 && comparison.Grid.Rows[0].Cells[0].Value.ToString() == "Added to plan", "comparison window displays read-only list differences");
+                comparison.Close();
+            }
             form.Close();
         }
     }

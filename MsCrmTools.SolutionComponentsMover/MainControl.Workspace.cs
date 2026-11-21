@@ -1,4 +1,5 @@
 using Microsoft.Xrm.Sdk;
+using MsCrmTools.SolutionComponentsMover.AppCode;
 using MsCrmTools.SolutionComponentsMover.UserControls;
 using MsCrmTools.SolutionComponentsMover.Forms;
 using System;
@@ -14,6 +15,9 @@ namespace MsCrmTools.SolutionComponentsMover
         private BatchWorkspace workspace;
         private Panel workspaceStorage;
         private bool executionActive;
+        private readonly RunHistory runHistory = new RunHistory();
+        private RunReport lastRunReport;
+        private ToolStripButton exportRunReport;
 
         private void InitializeTabbedWorkspace()
         {
@@ -60,6 +64,9 @@ namespace MsCrmTools.SolutionComponentsMover
                 if (workspace.SelectedTarget != null) targetSolutionPicker.SelectSolutionsByIds(new[] { workspace.SelectedTarget.Id });
             };
             workspace.Tabs.SelectedIndexChanged += (s, e) => UpdateWorkspaceNavigation();
+            exportRunReport = new ToolStripButton("Export run report") { Enabled = false, Visible = false };
+            exportRunReport.Click += (s, e) => ExportRunReport();
+            tsMain.Items.Add(exportRunReport);
             UpdateWorkspaceNavigation();
         }
 
@@ -73,6 +80,59 @@ namespace MsCrmTools.SolutionComponentsMover
             tslProgress.Visible = tspBatch.Visible = executionActive || workspace.Tabs.SelectedTab == workspace.ResultsPage;
             tsddbLogs.Visible = workspace.Tabs.SelectedTab == workspace.ResultsPage;
             workspace.SetupPage.Enabled = !batchBusy;
+            if (exportRunReport != null)
+            {
+                exportRunReport.Visible = workspace.Tabs.SelectedTab == workspace.ResultsPage;
+                exportRunReport.Enabled = lastRunReport != null && !batchBusy;
+            }
+        }
+
+        private void ExportRunReport()
+        {
+            if (batchBusy || lastRunReport == null) return;
+            using (var dialog = new SaveFileDialog { Filter = "Run report ZIP|*.zip", FileName = "run-" + lastRunReport.RunId.ToString("N") + ".zip" })
+                if (dialog.ShowDialog(ParentForm) == DialogResult.OK)
+                    try { RunHistory.Export(dialog.FileName, lastRunReport); }
+                    catch (Exception error) { ShowBatchError(error); }
+        }
+
+        private void PersistRunReport(RunReport report)
+        {
+            try { report.PersistenceWarning = null; runHistory.Save(report); }
+            catch (Exception error) { report.PersistenceWarning = "Local history could not be saved: " + error.Message + ". Use Export run report after completion."; }
+        }
+
+        private void WirePreviewHistory(BatchPreviewForm view, BatchPlan plan)
+        {
+            view.SaveBaselineRequested += (s, e) =>
+            {
+                try
+                {
+                    var baseline = RunReport.Create(plan, "Preview baseline");
+                    baseline.FinishedUtc = baseline.StartedUtc;
+                    var path = runHistory.Save(baseline);
+                    MessageBox.Show(ParentForm, "Read-only baseline saved locally: " + path, "Baseline saved");
+                }
+                catch (Exception error) { ShowBatchError(error); }
+            };
+            view.CompareRequested += (s, e) => ShowRunComparison(plan.PreviousRun, plan);
+            view.LoadComparisonRequested += (s, e) =>
+            {
+                using (var dialog = new OpenFileDialog { Filter = "Run report|*.zip;*.json" })
+                    if (dialog.ShowDialog(ParentForm) == DialogResult.OK)
+                        try { ShowRunComparison(RunHistory.Load(dialog.FileName), plan); }
+                        catch (Exception error) { ShowBatchError(error); }
+            };
+        }
+
+        private void ShowRunComparison(RunReport previous, BatchPlan plan)
+        {
+            if (previous == null) return;
+            try
+            {
+                using (var view = new RunComparisonForm(previous, RunReport.Create(plan, "Current preview"))) view.ShowDialog(ParentForm);
+            }
+            catch (Exception error) { ShowBatchError(error); }
         }
 
         private void RefreshWorkspaceSources()
