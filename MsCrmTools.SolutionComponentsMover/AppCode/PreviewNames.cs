@@ -22,13 +22,23 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
             { 80, new[] { "appmodule", "appmoduleid", "name" } }
         };
 
+        private static readonly Dictionary<int, string> EnglishTypes = new Dictionary<int, string>
+        {
+            { 1, "Entity" }, { 2, "Field" }, { 3, "Relationship" }, { 9, "Option Set" },
+            { 26, "View" }, { 29, "Workflow" }, { 60, "Form" }, { 61, "Web Resource" },
+            { 80, "Model-driven App" }, { 90, "Plugin Type" }, { 91, "Plugin Assembly" },
+            { 92, "Plugin Step" }, { 380, "Environment Variable Definition" }, { 381, "Environment Variable Value" }
+        };
+
         public static void Populate(BatchPlan plan, IOrganizationService service, OptionMetadataCollection types)
         {
             foreach (var group in plan.Components.GroupBy(c => c.Type))
             {
-                foreach (var component in group)
-                    component.TypeName = group.Key == 61 ? "Web Resource" :
-                        types?.FirstOrDefault(o => o.Value == group.Key)?.Label?.UserLocalizedLabel?.Label ?? "Component type " + group.Key;
+                string englishType;
+                if (!EnglishTypes.TryGetValue(group.Key, out englishType))
+                    englishType = types?.FirstOrDefault(o => o.Value == group.Key)?.Label?.LocalizedLabels
+                        .FirstOrDefault(label => label.LanguageCode == 1033)?.Label ?? "Component type " + group.Key;
+                foreach (var component in group) component.TypeName = englishType;
                 string[] table;
                 if (!Tables.TryGetValue(group.Key, out table)) continue;
                 var components = group.ToList();
