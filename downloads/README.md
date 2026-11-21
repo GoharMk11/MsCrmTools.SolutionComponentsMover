@@ -1,11 +1,11 @@
 # Download the Windows DEV test build
 
-[Download latest ZIP — Setup / Preview / Results](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/raw/refs/heads/feature/batch-solution-import/downloads/Batch-Solution-Components-Copier-Windows-Tabs-aee3ca3.zip)
+[Download latest ZIP — additive sources, Preview filters and named Results](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/raw/refs/heads/feature/batch-solution-import/downloads/Batch-Solution-Components-Copier-Windows-Additive-e55f8f0.zip)
 
-Contains the unchanged Windows CI Release DLL/PDB and English `INSTALL.txt`. Close XrmToolBox, back up the old plugin outside the Plugins folder, replace the DLL and restart. Windows, .NET Framework 4.8 and a compatible XrmToolBox installation are required.
+Contains the unchanged Windows CI Release DLL/PDB and English `INSTALL.txt`. Close XrmToolBox, back up the old plugin outside Plugins, replace the DLL and restart. Requires Windows, .NET Framework 4.8 and a compatible XrmToolBox host.
 
-The new workspace separates Setup, Preview and Results. Setup shows selected sources and a searchable unmanaged target; paste/import and manual source browsing open separate dialogs. Preview contains the read-only component table and Copy N components action. Results contains progress, cancellation, per-component results and CSV export. All interface/log text is English.
+Setup / Preview / Results remain separate. **Add manually...** now preserves imported/manual sources: select additional sources, then click **Add selected sources**. Cancel is read-only; use **Remove selected** on Setup for removal. Preview filters All actions / To add / Existing / Expand combine with Search; they affect display only, never the full copy plan. Results and CSV include component names and readable type labels. All interface/log text is English.
 
-Code commit `aee3ca3`: Windows Release build 0 warnings / 0 errors, **104 native assertions passed** in [CI](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/actions/runs/44885892171). Tests include constructing the actual production DLL UI offline, source/target synchronization, input dialog lifetime and busy-state protection. [See the real Windows UI screenshot](tabs-setup.png).
+Code commit `e55f8f0`: Windows production Release build 0 warnings / 0 errors, **119 native assertions passed** in [CI](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/actions/runs/44889292197). Tests cover imported-plus-manual single-click regression, cancellation/repeated additions, action/search filtering, unchanged copy plans, named results for success/skip/failure and the actual production UI. [Preview screenshot](preview-filters.png).
 
-CRM 9.1 On-Premise DEV integration still requires user confirmation. The adjacent `.sha256` checks package integrity. Earlier ZIP builds remain available for comparison.
+Live CRM DEV confirmation is still required. The adjacent `.sha256` checks package integrity. Previous ZIPs remain available for comparison.
