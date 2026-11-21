@@ -84,3 +84,7 @@ Code commit `33aa280` passed [Windows CI run 43491205219](https://github.com/Goh
 - Copy requests, inclusion rules, dependency handling and source membership preservation are unchanged.
 - Portable suite passes 71 assertions. Windows tests additionally cover the real table's read-only behavior, labels, technical columns and search, and capture a sample preview screenshot. Final Windows evidence and download package are recorded after CI.
 - User-provided evidence confirms the prior read-only preview retrieved 19 memberships / 18 unique Web Resources across three DEV sources; the new friendly-name queries still require user DEV confirmation.
+
+### Table preview Windows validation
+
+Code commit `20445a5` passed [Windows CI](https://github.com/GoharMk11/MsCrmTools.SolutionComponentsMover/actions/runs/44883950188): production Release build 0 warnings / 0 errors and **86 native assertions passed**. The actual preview form was rendered on Windows and its [screenshot](../downloads/preview-table.png) visually inspected. The [download package](../downloads/Batch-Solution-Components-Copier-Windows-Table-Preview-20445a5.zip) contains the unchanged CI DLL/PDB and updated English installation instructions. Names and read-only queries were checked with a fake service; friendly-name retrieval against the user's CRM still awaits their test. Copy behavior is unchanged.
