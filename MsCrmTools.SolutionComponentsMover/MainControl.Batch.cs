@@ -179,15 +179,21 @@ namespace MsCrmTools.SolutionComponentsMover
                 InvalidatePreview();
                 var generation = connectionGeneration;
                 var manager = sManager;
+                var previewService = Service;
                 SetBatchBusy(true);
                 WorkAsync(new WorkAsyncInfo
                 {
                     Message = "Preparing read-only component preview...",
-                    Work = (bw, e) => e.Result = manager.Preview(settings),
+                    Work = (bw, e) =>
+                    {
+                        var plan = manager.Preview(settings);
+                        PreviewNames.Populate(plan, previewService, _omc);
+                        e.Result = plan;
+                    },
                     PostWorkCallBack = e =>
                     {
                         if (IsDisposed || Disposing) return;
-                    SetBatchBusy(false);
+                        SetBatchBusy(false);
                         if (generation != connectionGeneration) return;
                         if (e.Error != null) { ShowBatchError(e.Error); return; }
                         batchPreview = (BatchPlan)e.Result;
@@ -196,17 +202,8 @@ namespace MsCrmTools.SolutionComponentsMover
                             $"Retrieved: {batchPreview.RetrievedCount} | Unique: {batchPreview.Components.Count} | Already Exists: {batchPreview.ExistingCount} | Planned: {batchPreview.PlannedCount}";
                         lblBatchSummary.Text = summary;
                         tsbCopyComponents.Enabled = true;
-                        var details = summary + Environment.NewLine + "Source solutions: " +
-                            string.Join(", ", settings.SourceSolutions.Select(s => s.GetAttributeValue<string>("friendlyname"))) +
-                            Environment.NewLine + string.Join(Environment.NewLine, batchPreview.Warnings) + Environment.NewLine +
-                            string.Join(Environment.NewLine, batchPreview.Components.Select(c =>
-                                $"{c.Type} | {c.Id} | behavior={c.Behavior} | {(c.AlreadyExists ? "Already Exists" : "Add / expand coverage")} | {string.Join("; ", c.Sources)}"));
-                        using (var previewDialog = new Form { Text = "Read-only Preview — review before Copy All", Width = 1000, Height = 650, StartPosition = FormStartPosition.CenterParent })
-                        {
-                            previewDialog.Controls.Add(new TextBox { Multiline = true, ReadOnly = true, WordWrap = false,
-                                ScrollBars = ScrollBars.Both, Dock = DockStyle.Fill, Text = details });
+                        using (var previewDialog = new BatchPreviewForm(batchPreview))
                             previewDialog.ShowDialog(ParentForm);
-                        }
                     }
                 });
             }

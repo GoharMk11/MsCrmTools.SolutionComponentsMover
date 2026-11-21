@@ -76,6 +76,10 @@
   <ItemGroup>
     <Compile Include="AppCode\SolutionInputParser.cs" />
     <Compile Include="AppCode\BatchPlan.cs" />
+    <Compile Include="AppCode\PreviewNames.cs" />
+    <Compile Include="Forms\BatchPreviewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="AppCode\CsvFormatting.cs" />
     <Compile Include="AppCode\CopySettings.cs" />
     <Compile Include="AppCode\ListViewColumnSorter.cs" />

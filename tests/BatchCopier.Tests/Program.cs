@@ -16,6 +16,7 @@ internal static class Program
     {
         ParserTests();
         EngineTests.Run(Check);
+        PreviewTests.Run(Check);
 #if NET48
         PickerTests.Run(Check);
 #endif

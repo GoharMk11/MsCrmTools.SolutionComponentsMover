@@ -20,6 +20,11 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
         public int? Behavior { get; set; }
         public List<string> Sources { get; set; }
         public bool AlreadyExists { get; set; }
+        public bool TargetPresent { get; set; }
+        public string DisplayName { get; set; }
+        public string TypeName { get; set; }
+        public string NameWarning { get; set; }
+        public string ActionLabel => AlreadyExists ? "Skip — already included" : TargetPresent ? "Expand existing coverage" : "Add to target";
         public string Key => Type + ":" + Id;
     }
 

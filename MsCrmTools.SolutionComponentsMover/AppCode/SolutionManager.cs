@@ -143,6 +143,7 @@ namespace MsCrmTools.SolutionComponentsMover.AppCode
                     Id = first.GetAttributeValue<Guid>("objectid"), Type = type, Behavior = behavior,
                     Sources = group.Select(c => sources.First(s => s.Id == c.GetAttributeValue<EntityReference>("solutionid").Id)
                         .GetAttributeValue<string>("uniquename")).Distinct().OrderBy(n => n).ToList(),
+                    TargetPresent = present,
                     AlreadyExists = present && targetBehaviors.Any(b => ComponentCoverage.Satisfies(b, behavior))
                 };
             }).OrderBy(c => c.Type).ThenBy(c => c.Id).ToList();
